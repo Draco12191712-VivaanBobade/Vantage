@@ -1,0 +1,78 @@
+#macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+#windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+#linux
+*~
+.Trash-*
+
+#vs code
+.vscode/
+.history/
+
+#node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+*.tsbuildinfo
+
+#builds
+dist/
+builds/
+out/
+coverage/
+
+#logs
+logs/
+*.log
+
+#temp files
+tmp/
+temp/
+*.tmp
+
+#env files
+.env
+.env.*
+
+#archives
+*.zip
+*.tar
+*.tar.gz
+*.7z
+*.rar
+*.mcpack
+*.mcaddon
+
+#bridge v2
+.bridge/
+.bridge-cache/
+config.json
+deno.json
+
+#blockbench
+*.bbmodel.backup
+*.bbmodel
+
+#generated files
+generated/
+cache/
+
+#os cache
+.fseventsd
+.Spotlight-V100
+.Trashes
+
+# git
+*.orig
