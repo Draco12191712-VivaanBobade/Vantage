@@ -1,0 +1,84 @@
+# source code
+*.ts            text
+*.js            text
+*.mjs           text
+*.cjs           text
+*.json          text
+*.mcmeta        text
+*.lang          text
+*.molang        text
+*.mcfunction    text
+
+#github
+*.json linguist-language=JavaScript
+*.jsonc linguist-language=JavaScript
+*.mcpack linguist-generated=true
+*.mcaddon linguist-generated=true
+build/** linguist-generated=true
+dist/** linguist-generated=true
+release/** linguist-generated=true
+
+#scripts
+*.sh            text eol=lf
+*.bat           text eol=crlf
+*.ps1           text eol=crlf
+
+#markdown
+*.md            text
+
+# documentation
+*.txt           text
+*.yml           text
+*.yaml          text
+*.xml           text
+
+#minecraft resources
+*.material      text
+*.render_controllers text
+*.animation     text
+*.animation_controller text
+*.entity        text
+*.item          text
+*.block         text
+*.feature       text
+*.feature_rule  text
+*.spawn_rules   text
+*.loot_table    text
+*.recipe        text
+*.trade_table   text
+*.dialogue      text
+*.fog           text
+
+# images
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.webp          binary
+*.tga           binary
+*.psd           binary
+
+# models
+*.geo.json      text
+*.bbmodel       binary
+
+# audio
+*.ogg           binary
+*.wav           binary
+*.mp3           binary
+
+# fonts
+*.ttf           binary
+*.otf           binary
+
+#archives
+*.zip           binary
+*.7z            binary
+*.rar           binary
+
+#licenses
+LICENSE         text
+COPYING         text
+
+#enforce line endings
+*               text=auto eol=lf
