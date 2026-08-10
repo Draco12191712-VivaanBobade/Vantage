@@ -151,4 +151,4 @@ Vantage is not affiliated with or endorsed by Mojang Studios or Microsoft.
 
 ## License
 
-Mozilla Public License v3 (MPL-v2)
+Mozilla Public License v2 (MPL-v2)
