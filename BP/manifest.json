@@ -1,48 +1,78 @@
 {
-  "format_version": 2,
-  "metadata": {
-    "authors": ["Draco12191712 (Vivaan Bobade)"],
-    "generated_with": {
-      "java-uuid-gen": ["0.3.9"]
-    }
-  },
-  "header": {
-    "name": "Vantage",
-    "description": "Vantage is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more. V0.1.0-alpha.1, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0.",
-    "min_engine_version": [1, 26, 0],
-    "uuid": "20c1797e-3e1c-4cac-aba3-4e44cbc7da47",
-    "version": [0, 1, 0]
-  },
-  "modules": [
-    {
-      "type": "data",
-      "uuid": "84f9750e-2861-47e4-9ea3-1bea5a5ace7c",
-      "version": [0, 1, 0]
-    },
-    {
-      "type": "script",
-      "language": "javascript",
-      "uuid": "aa3f951a-81b6-4784-829a-750666d0d462",
-      "entry": "scripts/main.js",
-      "version": [0, 1, 0]
-    }
-  ],
-  "dependencies": [
-    {
-      "uuid": "c1d18e27-3e76-4e11-ab32-04d9e46b19d1",
-      "version": [0, 1, 0]
-    },
-    {
-      "module_name": "@minecraft/server",
-      "version": "1.0.0-beta"
-    },
-    {
-      "module_name": "@minecraft/server-gametest",
-      "version": "1.0.0-beta"
-    },
-    {
-      "module_name": "@minecraft/server-ui",
-      "version": "1.0.0-beta"
-    }
-  ]
+	"format_version": 2,
+	"metadata": {
+		"authors": [
+			"Draco12191712 (Vivaan Bobade)"
+		],
+		"generated_with": {
+			"java-uuid-gen": [
+				"0.3.9"
+			],
+			"bridge": [
+				"2.7.54"
+			],
+			"dash": [
+				"0.11.7"
+			]
+		}
+	},
+	"header": {
+		"name": "Vantage",
+		"description": "Vantage is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more. V0.1.0-alpha.1, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0.",
+		"min_engine_version": [
+			1,
+			26,
+			0
+		],
+		"uuid": "20c1797e-3e1c-4cac-aba3-4e44cbc7da47",
+		"version": [
+			0,
+			1,
+			0
+		]
+	},
+	"modules": [
+		{
+			"type": "data",
+			"uuid": "84f9750e-2861-47e4-9ea3-1bea5a5ace7c",
+			"version": [
+				0,
+				1,
+				0
+			]
+		},
+		{
+			"type": "script",
+			"language": "javascript",
+			"uuid": "aa3f951a-81b6-4784-829a-750666d0d462",
+			"entry": "scripts/main.js",
+			"version": [
+				0,
+				1,
+				0
+			]
+		}
+	],
+	"dependencies": [
+		{
+			"uuid": "c1d18e27-3e76-4e11-ab32-04d9e46b19d1",
+			"version": [
+				0,
+				1,
+				0
+			]
+		},
+		{
+			"module_name": "@minecraft/server",
+			"version": "1.0.0-beta"
+		},
+		{
+			"module_name": "@minecraft/server-gametest",
+			"version": "1.0.0-beta"
+		},
+		{
+			"module_name": "@minecraft/server-ui",
+			"version": "1.0.0-beta"
+		}
+	]
 }
