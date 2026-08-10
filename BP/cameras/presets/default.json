@@ -1,0 +1,7 @@
+{
+    "format_version": "1.26.0",
+    "minecraft:camera_preset": {
+        "identifier": "vantage:default",
+        "inherit_from": "minecraft:first_person"
+    }
+}

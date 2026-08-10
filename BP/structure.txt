@@ -37,6 +37,7 @@ DynamicFirstPerson/
 │           ├── math.js
 │           ├── interpolation.js
 │           └── performance.js
+|      
 │
 │
 ├── RP/
@@ -64,7 +65,7 @@ DynamicFirstPerson/
 │   ├── textures/
 │   │   └── ui/
 │   │       └── ...
-│   │
+│   │.   geometry → attachable → render controller → animations/controller.
 │   ├── ui/
 │   │   └── ...
 │   │
