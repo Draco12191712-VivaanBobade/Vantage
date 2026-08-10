@@ -1,6 +1,36 @@
 {
-	"format_version": "1.8.0",
+	"format_version": "1.26.0",
 	"render_controllers": {
-		"controller.render.blank": {}
+		"controller.render.vantage.first_person": {
+			"geometry": "Geometry.default",
+			"materials": [
+				{
+					"*": "Material.default"
+				}
+			],
+			"textures": [
+				"Texture.default"
+			],
+			"part_visibility": [
+				{
+					"head": "0.0"
+				},
+				{
+					"body": "1.0"
+				},
+				{
+					"leftArm": "1.0"
+				},
+				{
+					"rightArm": "1.0"
+				},
+				{
+					"leftLeg": "0.0"
+				},
+				{
+					"rightLeg": "0.0"
+				}
+			]
+		}
 	}
 }
