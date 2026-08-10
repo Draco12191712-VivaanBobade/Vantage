@@ -141,7 +141,7 @@ The goal is to make camera and player behavior feel more polished while retainin
 
 Vantage is an original Minecraft Bedrock Edition addon.
 
-This add-on was suggested by sick_0_0 on Discord, you can contact him [here](https://discord.com/1353824744578879491)
+This add-on was suggested by sick_0_0 on Discord, you can contact him [here](https://discord.com/users/1353824744578879491)
 
 The project uses Minecraft Bedrock's official scripting and addon systems to implement its functionality.
 
