@@ -1,4 +1,4 @@
-export const CONFIG_VERSION = 2;
+export const CONFIG_VERSION = 1;
 
 export const CAMERA_MODES = Object.freeze({
     FIRST_PERSON: "first_person",
@@ -8,84 +8,35 @@ export const CAMERA_MODES = Object.freeze({
 export const VISIBILITY_MODES = Object.freeze({
     FULL: "full",
     VANILLA: "vanilla",
-    CUSTOM: "custom",
-    HIDDEN: "hidden"
+    CUSTOM: "custom"
 });
 
 export const ANIMATION_CONFLICT_POLICIES = Object.freeze({
     MINIMAL: "minimal",
-    VANILLA_PRIORITY: "vanilla_priority",
-    VANTAGE_PRIORITY: "vantage_priority"
+    VANILLA_PRIORITY: "vanilla_priority"
 });
 
 export const RENDER_CONFLICT_POLICIES = Object.freeze({
     MINIMAL: "minimal",
-    VANILLA_PRIORITY: "vanilla_priority",
-    VANTAGE_PRIORITY: "vantage_priority"
+    VANILLA_PRIORITY: "vanilla_priority"
 });
 
 export const PERFORMANCE_PRESETS = Object.freeze({
-    QUALITY: Object.freeze({
-        enabled: true,
-
-        updateInterval: 1,
-        maxUpdatesPerTick: 100,
-
-        cachePlayerState: true,
-        cachePoseState: true,
-        cacheVisibilityState: true,
-
-        updateOnlyWhenChanged: false,
-        skipInvalidPlayers: true,
-
-        lowPowerMode: false
-    }),
-
     BALANCED: Object.freeze({
         enabled: true,
-
         updateInterval: 1,
         maxUpdatesPerTick: 32,
-
-        cachePlayerState: true,
-        cachePoseState: true,
-        cacheVisibilityState: true,
-
         updateOnlyWhenChanged: true,
         skipInvalidPlayers: true,
-
         lowPowerMode: false
     }),
 
     PERFORMANCE: Object.freeze({
         enabled: true,
-
         updateInterval: 2,
         maxUpdatesPerTick: 16,
-
-        cachePlayerState: true,
-        cachePoseState: true,
-        cacheVisibilityState: true,
-
         updateOnlyWhenChanged: true,
         skipInvalidPlayers: true,
-
-        lowPowerMode: true
-    }),
-
-    LOW_POWER: Object.freeze({
-        enabled: true,
-
-        updateInterval: 4,
-        maxUpdatesPerTick: 8,
-
-        cachePlayerState: true,
-        cachePoseState: true,
-        cacheVisibilityState: true,
-
-        updateOnlyWhenChanged: true,
-        skipInvalidPlayers: true,
-
         lowPowerMode: true
     })
 });
@@ -120,9 +71,7 @@ export const DEFAULT_CAMERA_CONFIG = Object.freeze({
 
     transition: Object.freeze({
         enabled: true,
-
-        duration: 0.2,
-
+        duration: 0.15,
         positionSmoothing: 16,
         rotationSmoothing: 18
     })
@@ -134,10 +83,7 @@ export const DEFAULT_BODY_CONFIG = Object.freeze({
     visibility: Object.freeze({
         mode: VISIBILITY_MODES.FULL,
 
-        firstPersonOnly: true,
-        thirdPersonOnly: false,
-
-        head: true,
+        head: false,
         body: true,
 
         leftArm: true,
@@ -149,21 +95,8 @@ export const DEFAULT_BODY_CONFIG = Object.freeze({
         cape: true,
         armor: true,
         heldItem: true
-    }),
-
-    rendering: Object.freeze({
-        showHead: true,
-        showBody: true,
-        showArms: true,
-        showLegs: true,
-        showCape: true,
-        showArmor: true,
-        showHeldItem: true
     })
 });
-
-export const DEFAULT_VISIBILITY_CONFIG =
-    DEFAULT_BODY_CONFIG.visibility;
 
 export const DEFAULT_ANIMATION_CONFIG = Object.freeze({
     enabled: true,
@@ -172,24 +105,6 @@ export const DEFAULT_ANIMATION_CONFIG = Object.freeze({
     rotationSmoothing: 18,
 
     movementScale: 1,
-
-    bob: Object.freeze({
-        enabled: true,
-        amount: 1,
-        maximum: 1
-    }),
-
-    sway: Object.freeze({
-        enabled: true,
-        amount: 1,
-        maximum: 1
-    }),
-
-    lean: Object.freeze({
-        enabled: true,
-        amount: 1,
-        maximum: 1
-    }),
 
     poses: Object.freeze({
         idle: true,
@@ -200,10 +115,7 @@ export const DEFAULT_ANIMATION_CONFIG = Object.freeze({
         crawling: true,
         jumping: true,
         falling: true,
-        climbing: true,
-        gliding: true,
-        riding: true,
-        flying: true
+        riding: true
     })
 });
 
@@ -259,12 +171,7 @@ export const DEFAULT_PERFORMANCE_CONFIG = Object.freeze({
     enabled: true,
 
     updateInterval: 1,
-
     maxUpdatesPerTick: 32,
-
-    cachePlayerState: true,
-    cachePoseState: true,
-    cacheVisibilityState: true,
 
     updateOnlyWhenChanged: true,
     skipInvalidPlayers: true,
@@ -274,13 +181,7 @@ export const DEFAULT_PERFORMANCE_CONFIG = Object.freeze({
 
 export const DEFAULT_DEBUG_CONFIG = Object.freeze({
     enabled: false,
-
-    logging: false,
-
-    cameraLogging: false,
-    animationLogging: false,
-    compatibilityLogging: false,
-    performanceLogging: false
+    logging: false
 });
 
 export const DEFAULT_CONFIG = Object.freeze({
@@ -289,23 +190,21 @@ export const DEFAULT_CONFIG = Object.freeze({
     enabled: true,
 
     camera: DEFAULT_CAMERA_CONFIG,
-
     body: DEFAULT_BODY_CONFIG,
-
     animation: DEFAULT_ANIMATION_CONFIG,
 
     gameplay: DEFAULT_GAMEPLAY_CONFIG,
-
     compatibility: DEFAULT_COMPATIBILITY_CONFIG,
 
     multiplayer: DEFAULT_MULTIPLAYER_CONFIG,
-
     controls: DEFAULT_CONTROLS_CONFIG,
 
     performance: DEFAULT_PERFORMANCE_CONFIG,
-
     debugging: DEFAULT_DEBUG_CONFIG
 });
+
+export const DEFAULT_VISIBILITY_CONFIG =
+    DEFAULT_BODY_CONFIG.visibility;
 
 export function getDefaultConfig() {
     return DEFAULT_CONFIG;
@@ -361,11 +260,10 @@ export function getPerformancePreset(
         return PERFORMANCE_PRESETS.BALANCED;
     }
 
-    const normalized =
-        name.trim().toUpperCase();
-
     return (
-        PERFORMANCE_PRESETS[normalized] ??
+        PERFORMANCE_PRESETS[
+        name.trim().toUpperCase()
+        ] ??
         PERFORMANCE_PRESETS.BALANCED
     );
 }

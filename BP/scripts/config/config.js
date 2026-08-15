@@ -1,14 +1,4 @@
 import {
-    DEFAULT_CONFIG,
-    CONFIG_VERSION,
-    CAMERA_MODES,
-    VISIBILITY_MODES,
-    ANIMATION_CONFLICT_POLICIES,
-    RENDER_CONFLICT_POLICIES,
-    PERFORMANCE_PRESETS
-} from "./defaults.js";
-
-import {
     loadWorldConfig,
     saveWorldConfig,
     deleteWorldConfig,
@@ -17,111 +7,202 @@ import {
     deletePlayerConfig
 } from "./storage.js";
 
-let playerConfigs = new WeakMap();
+const CONFIG_VERSION = 1;
 
-let globalConfigCache = null;
-let globalConfigLoaded = false;
+const DEFAULT_CONFIG = {
+    version: CONFIG_VERSION,
 
-let revision = 0;
-let initialized = false;
+    enabled: true,
+
+    camera: {
+        mode: "first_person",
+
+        firstPersonPosition: {
+            x: 0,
+            y: 0,
+            z: 0
+        },
+
+        thirdPersonPosition: {
+            x: 0,
+            y: 0,
+            z: 0
+        },
+
+        fov: null,
+        preserveFov: true,
+
+        transition: {
+            enabled: true,
+            duration: 0.12
+        }
+    },
+
+    body: {
+        enabled: true,
+
+        visibility: {
+            head: false,
+            body: true,
+            leftArm: true,
+            rightArm: true,
+            leftLeg: true,
+            rightLeg: true,
+            cape: true,
+            armor: true,
+            heldItem: true
+        }
+    },
+
+    animation: {
+        enabled: true,
+
+        smoothing: 85,
+
+        bob: {
+            enabled: true,
+            amount: 1,
+            maximum: 1
+        },
+
+        sway: {
+            enabled: true,
+            amount: 1,
+            maximum: 1
+        },
+
+        lean: {
+            enabled: true,
+            amount: 1,
+            maximum: 1
+        },
+
+        poses: {
+            sneaking: true,
+            swimming: true,
+            crawling: true,
+            riding: true
+        },
+
+        preserveCustomAnimations: true
+    },
+
+    gameplay: {
+        preserveVanillaInteraction: true,
+        preserveVanillaHitDetection: true,
+        preserveVanillaReach: true,
+        preserveVanillaMovement: true,
+        preserveVanillaControls: true
+    },
+
+    compatibility: {
+        preserveResourcePacks: true,
+        preserveTexturePacks: true,
+        preserveOtherAddons: true,
+
+        avoidEntityMutation: true,
+        avoidGameplayMutation: true,
+        avoidInputMutation: true,
+
+        preserveCustomAnimations: true
+    },
+
+    multiplayer: {
+        enabled: true,
+        clientOnly: true
+    },
+
+    controls: {
+        touch: true,
+        mouseKeyboard: true,
+        controller: true,
+
+        preserveSensitivity: true
+    },
+
+    performance: {
+        enabled: true,
+
+        updateInterval: 1,
+
+        updateOnlyWhenChanged: true,
+        cachePlayerState: true,
+        cachePoseState: true,
+
+        skipInvalidPlayers: true,
+        lowPowerMode: false
+    },
+
+    debugging: {
+        enabled: false,
+        logging: false
+    }
+};
 
 const GLOBAL_PATHS = new Set([
     "enabled",
 
     "camera.mode",
-    "camera.firstPersonPreset",
-    "camera.thirdPersonPreset",
-    "camera.position.x",
-    "camera.position.y",
-    "camera.position.z",
-    "camera.firstPersonPosition.x",
-    "camera.firstPersonPosition.y",
-    "camera.firstPersonPosition.z",
-    "camera.thirdPersonPosition.x",
-    "camera.thirdPersonPosition.y",
-    "camera.thirdPersonPosition.z",
     "camera.fov",
-    "camera.fovCompatibility",
+    "camera.preserveFov",
     "camera.transition.enabled",
     "camera.transition.duration",
-    "camera.transition.positionSmoothing",
-    "camera.transition.rotationSmoothing",
 
     "gameplay.preserveVanillaInteraction",
     "gameplay.preserveVanillaHitDetection",
     "gameplay.preserveVanillaReach",
     "gameplay.preserveVanillaMovement",
     "gameplay.preserveVanillaControls",
-    "gameplay.preserveVanillaFov",
 
-    "compatibility.addons",
-    "compatibility.resourcePacks",
-    "compatibility.texturePacks",
-    "compatibility.customAnimations",
-    "compatibility.customPlayerModels",
-    "compatibility.animationConflictPolicy",
-    "compatibility.renderConflictPolicy",
+    "compatibility.preserveResourcePacks",
+    "compatibility.preserveTexturePacks",
+    "compatibility.preserveOtherAddons",
     "compatibility.avoidEntityMutation",
     "compatibility.avoidGameplayMutation",
     "compatibility.avoidInputMutation",
+    "compatibility.preserveCustomAnimations",
 
     "multiplayer.enabled",
-    "multiplayer.clientOnlyVisuals",
-    "multiplayer.synchronizeCamera",
-    "multiplayer.synchronizePose",
-    "multiplayer.synchronizeVisibility",
+    "multiplayer.clientOnly",
 
     "controls.touch",
     "controls.mouseKeyboard",
     "controls.controller",
     "controls.preserveSensitivity",
-    "controls.preserveTouchLayout",
-    "controls.preserveControllerBindings",
 
     "performance.enabled",
     "performance.updateInterval",
-    "performance.maxUpdatesPerTick",
+    "performance.updateOnlyWhenChanged",
     "performance.cachePlayerState",
     "performance.cachePoseState",
-    "performance.cacheVisibilityState",
-    "performance.updateOnlyWhenChanged",
     "performance.skipInvalidPlayers",
     "performance.lowPowerMode",
 
     "debugging.enabled",
-    "debugging.logging",
-    "debugging.cameraLogging",
-    "debugging.animationLogging",
-    "debugging.compatibilityLogging",
-    "debugging.performanceLogging"
+    "debugging.logging"
 ]);
 
 const PLAYER_PATHS = new Set([
     "enabled",
 
     "camera.mode",
-    "camera.firstPersonPreset",
-    "camera.thirdPersonPreset",
-    "camera.position.x",
-    "camera.position.y",
-    "camera.position.z",
+
     "camera.firstPersonPosition.x",
     "camera.firstPersonPosition.y",
     "camera.firstPersonPosition.z",
+
     "camera.thirdPersonPosition.x",
     "camera.thirdPersonPosition.y",
     "camera.thirdPersonPosition.z",
+
     "camera.fov",
-    "camera.fovCompatibility",
+    "camera.preserveFov",
+
     "camera.transition.enabled",
     "camera.transition.duration",
-    "camera.transition.positionSmoothing",
-    "camera.transition.rotationSmoothing",
 
     "body.enabled",
-    "body.visibility.mode",
-    "body.visibility.firstPersonOnly",
-    "body.visibility.thirdPersonOnly",
+
     "body.visibility.head",
     "body.visibility.body",
     "body.visibility.leftArm",
@@ -132,18 +213,8 @@ const PLAYER_PATHS = new Set([
     "body.visibility.armor",
     "body.visibility.heldItem",
 
-    "body.rendering.showHead",
-    "body.rendering.showBody",
-    "body.rendering.showArms",
-    "body.rendering.showLegs",
-    "body.rendering.showCape",
-    "body.rendering.showArmor",
-    "body.rendering.showHeldItem",
-
     "animation.enabled",
     "animation.smoothing",
-    "animation.rotationSmoothing",
-    "animation.movementScale",
 
     "animation.bob.enabled",
     "animation.bob.amount",
@@ -157,19 +228,21 @@ const PLAYER_PATHS = new Set([
     "animation.lean.amount",
     "animation.lean.maximum",
 
-    "animation.poses.idle",
-    "animation.poses.walking",
-    "animation.poses.sprinting",
     "animation.poses.sneaking",
     "animation.poses.swimming",
     "animation.poses.crawling",
-    "animation.poses.jumping",
-    "animation.poses.falling",
-    "animation.poses.climbing",
-    "animation.poses.gliding",
     "animation.poses.riding",
-    "animation.poses.flying"
+
+    "animation.preserveCustomAnimations"
 ]);
+
+let globalConfig = null;
+let globalLoaded = false;
+
+let playerConfigs = new WeakMap();
+
+let revision = 0;
+let initialized = false;
 
 function clone(value) {
     if (value === undefined) {
@@ -184,8 +257,8 @@ function clone(value) {
 }
 
 function isObject(value) {
-    return Boolean(
-        value &&
+    return (
+        value !== null &&
         typeof value === "object" &&
         !Array.isArray(value)
     );
@@ -206,11 +279,7 @@ function isValidPlayer(player) {
     }
 }
 
-function deepMerge(base, override) {
-    if (!isObject(base)) {
-        return clone(override);
-    }
-
+function merge(base, override) {
     const result = clone(base);
 
     if (!isObject(override)) {
@@ -222,7 +291,7 @@ function deepMerge(base, override) {
             isObject(value) &&
             isObject(result[key])
         ) {
-            result[key] = deepMerge(
+            result[key] = merge(
                 result[key],
                 value
             );
@@ -236,37 +305,32 @@ function deepMerge(base, override) {
 
 function getPath(object, path) {
     if (
-        !object ||
-        typeof path !== "string" ||
-        path.length === 0
+        !isObject(object) ||
+        typeof path !== "string"
     ) {
         return undefined;
     }
 
-    const parts = path.split(".");
-    let current = object;
+    let value = object;
 
-    for (const part of parts) {
+    for (const part of path.split(".")) {
         if (
-            current === null ||
-            current === undefined ||
-            typeof current !== "object"
+            value === null ||
+            value === undefined
         ) {
             return undefined;
         }
 
-        current = current[part];
+        value = value[part];
     }
 
-    return current;
+    return value;
 }
 
 function setPath(object, path, value) {
     if (
-        !object ||
-        typeof object !== "object" ||
-        typeof path !== "string" ||
-        path.length === 0
+        !isObject(object) ||
+        typeof path !== "string"
     ) {
         return false;
     }
@@ -275,16 +339,14 @@ function setPath(object, path, value) {
     let current = object;
 
     for (
-        let index = 0;
-        index < parts.length - 1;
-        index++
+        let i = 0;
+        i < parts.length - 1;
+        i++
     ) {
-        const part = parts[index];
+        const part = parts[i];
 
         if (
-            !current[part] ||
-            typeof current[part] !== "object" ||
-            Array.isArray(current[part])
+            !isObject(current[part])
         ) {
             current[part] = {};
         }
@@ -292,60 +354,14 @@ function setPath(object, path, value) {
         current = current[part];
     }
 
-    current[parts[parts.length - 1]] =
-        clone(value);
+    current[
+        parts[parts.length - 1]
+    ] = clone(value);
 
     return true;
 }
 
-function deletePath(object, path) {
-    if (
-        !object ||
-        typeof object !== "object" ||
-        typeof path !== "string" ||
-        path.length === 0
-    ) {
-        return false;
-    }
-
-    const parts = path.split(".");
-    let current = object;
-
-    for (
-        let index = 0;
-        index < parts.length - 1;
-        index++
-    ) {
-        if (
-            !current ||
-            typeof current !== "object"
-        ) {
-            return false;
-        }
-
-        current = current[parts[index]];
-    }
-
-    if (
-        current &&
-        typeof current === "object"
-    ) {
-        delete current[
-            parts[parts.length - 1]
-        ];
-
-        return true;
-    }
-
-    return false;
-}
-
-function clampNumber(
-    value,
-    minimum,
-    maximum,
-    fallback
-) {
+function clamp(value, min, max, fallback) {
     if (
         typeof value !== "number" ||
         !Number.isFinite(value)
@@ -353,562 +369,142 @@ function clampNumber(
         return fallback;
     }
 
-    return Math.min(
-        maximum,
-        Math.max(minimum, value)
+    return Math.max(
+        min,
+        Math.min(max, value)
     );
 }
 
-function booleanValue(value, fallback) {
-    return typeof value === "boolean"
-        ? value
-        : fallback;
-}
+function validate(config) {
+    const result = merge(
+        DEFAULT_CONFIG,
+        config
+    );
 
-function stringValue(value, fallback) {
-    return (
-        typeof value === "string" &&
-        value.length > 0
-    )
-        ? value
-        : fallback;
-}
+    result.version = CONFIG_VERSION;
 
-function invalidateGlobalCache() {
-    globalConfigCache = null;
-    globalConfigLoaded = false;
-}
+    result.enabled =
+        Boolean(result.enabled);
 
-function bumpRevision() {
-    revision++;
-}
-
-function commitGlobalConfig(config) {
-    const validated =
-        createRuntimeConfig(config);
-
-    const success =
-        saveWorldConfig(validated);
-
-    if (!success) {
-        return false;
-    }
-
-    globalConfigCache =
-        clone(validated);
-
-    globalConfigLoaded = true;
-
-    bumpRevision();
-
-    return true;
-}
-
-function validateCamera(config) {
-    if (!isObject(config.camera)) {
-        config.camera =
-            clone(DEFAULT_CONFIG.camera);
-    }
-
-    if (!isObject(config.camera.position)) {
-        config.camera.position =
-            clone(DEFAULT_CONFIG.camera.position);
-    }
-
-    if (!isObject(config.camera.firstPersonPosition)) {
-        config.camera.firstPersonPosition =
-            clone(
-                DEFAULT_CONFIG.camera.firstPersonPosition
-            );
-    }
-
-    if (!isObject(config.camera.thirdPersonPosition)) {
-        config.camera.thirdPersonPosition =
-            clone(
-                DEFAULT_CONFIG.camera.thirdPersonPosition
-            );
-    }
-
-    if (!isObject(config.camera.transition)) {
-        config.camera.transition =
-            clone(
-                DEFAULT_CONFIG.camera.transition
-            );
-    }
-
-    config.camera.mode =
-        Object.values(CAMERA_MODES).includes(
-            config.camera.mode
-        )
-            ? config.camera.mode
-            : DEFAULT_CONFIG.camera.mode;
-
-    config.camera.firstPersonPreset =
-        stringValue(
-            config.camera.firstPersonPreset,
-            DEFAULT_CONFIG.camera.firstPersonPreset
-        );
-
-    config.camera.thirdPersonPreset =
-        stringValue(
-            config.camera.thirdPersonPreset,
-            DEFAULT_CONFIG.camera.thirdPersonPreset
-        );
-
-    config.camera.fov =
-        config.camera.fov === null
+    result.camera.fov =
+        result.camera.fov === null
             ? null
-            : clampNumber(
-                config.camera.fov,
+            : clamp(
+                result.camera.fov,
                 30,
                 110,
-                DEFAULT_CONFIG.camera.fov
+                null
             );
 
-    config.camera.fovCompatibility =
-        booleanValue(
-            config.camera.fovCompatibility,
-            DEFAULT_CONFIG.camera.fovCompatibility
-        );
-
-    for (const axis of ["x", "y", "z"]) {
-        config.camera.position[axis] =
-            clampNumber(
-                config.camera.position[axis],
-                -16,
-                16,
-                DEFAULT_CONFIG.camera.position[axis]
-            );
-
-        config.camera.firstPersonPosition[axis] =
-            clampNumber(
-                config.camera.firstPersonPosition[axis],
-                -16,
-                16,
-                DEFAULT_CONFIG.camera
-                    .firstPersonPosition[axis]
-            );
-
-        config.camera.thirdPersonPosition[axis] =
-            clampNumber(
-                config.camera.thirdPersonPosition[axis],
-                -16,
-                16,
-                DEFAULT_CONFIG.camera
-                    .thirdPersonPosition[axis]
-            );
-    }
-
-    config.camera.transition.enabled =
-        booleanValue(
-            config.camera.transition.enabled,
-            DEFAULT_CONFIG.camera.transition.enabled
-        );
-
-    config.camera.transition.duration =
-        clampNumber(
-            config.camera.transition.duration,
+    result.camera.transition.duration =
+        clamp(
+            result.camera.transition.duration,
             0,
-            10,
+            2,
             DEFAULT_CONFIG.camera.transition.duration
         );
 
-    config.camera.transition.positionSmoothing =
-        clampNumber(
-            config.camera.transition.positionSmoothing,
-            0,
-            100,
-            DEFAULT_CONFIG.camera.transition
-                .positionSmoothing
-        );
-
-    config.camera.transition.rotationSmoothing =
-        clampNumber(
-            config.camera.transition.rotationSmoothing,
-            0,
-            100,
-            DEFAULT_CONFIG.camera.transition
-                .rotationSmoothing
-        );
-}
-
-function validateBody(config) {
-    if (!isObject(config.body)) {
-        config.body =
-            clone(DEFAULT_CONFIG.body);
-    }
-
-    if (!isObject(config.body.visibility)) {
-        config.body.visibility =
-            clone(
-                DEFAULT_CONFIG.body.visibility
-            );
-    }
-
-    if (!isObject(config.body.rendering)) {
-        config.body.rendering =
-            clone(
-                DEFAULT_CONFIG.body.rendering
-            );
-    }
-
-    config.body.enabled =
-        booleanValue(
-            config.body.enabled,
-            DEFAULT_CONFIG.body.enabled
-        );
-
-    const visibility =
-        config.body.visibility;
-
-    visibility.mode =
-        Object.values(VISIBILITY_MODES).includes(
-            visibility.mode
-        )
-            ? visibility.mode
-            : DEFAULT_CONFIG.body.visibility.mode;
-
-    for (const key of [
-        "firstPersonOnly",
-        "thirdPersonOnly",
-        "head",
-        "body",
-        "leftArm",
-        "rightArm",
-        "leftLeg",
-        "rightLeg",
-        "cape",
-        "armor",
-        "heldItem"
+    for (const position of [
+        result.camera.firstPersonPosition,
+        result.camera.thirdPersonPosition
     ]) {
-        visibility[key] =
-            booleanValue(
-                visibility[key],
-                DEFAULT_CONFIG.body.visibility[key]
-            );
-    }
-
-    const rendering =
-        config.body.rendering;
-
-    for (const key of [
-        "showHead",
-        "showBody",
-        "showArms",
-        "showLegs",
-        "showCape",
-        "showArmor",
-        "showHeldItem"
-    ]) {
-        rendering[key] =
-            booleanValue(
-                rendering[key],
-                DEFAULT_CONFIG.body.rendering[key]
-            );
-    }
-}
-
-function validateAnimation(config) {
-    if (!isObject(config.animation)) {
-        config.animation =
-            clone(DEFAULT_CONFIG.animation);
-    }
-
-    const animation =
-        config.animation;
-
-    animation.enabled =
-        booleanValue(
-            animation.enabled,
-            DEFAULT_CONFIG.animation.enabled
+        position.x = clamp(
+            position.x,
+            -2,
+            2,
+            0
         );
 
-    animation.smoothing =
-        clampNumber(
-            animation.smoothing,
+        position.y = clamp(
+            position.y,
+            -2,
+            2,
+            0
+        );
+
+        position.z = clamp(
+            position.z,
+            -2,
+            2,
+            0
+        );
+    }
+
+    result.animation.smoothing =
+        clamp(
+            result.animation.smoothing,
             0,
             100,
             DEFAULT_CONFIG.animation.smoothing
         );
 
-    animation.rotationSmoothing =
-        clampNumber(
-            animation.rotationSmoothing,
-            0,
-            100,
-            DEFAULT_CONFIG.animation
-                .rotationSmoothing
-        );
-
-    animation.movementScale =
-        clampNumber(
-            animation.movementScale,
-            0,
-            10,
-            DEFAULT_CONFIG.animation.movementScale
-        );
-
     for (const group of [
-        "bob",
-        "sway",
-        "lean"
+        result.animation.bob,
+        result.animation.sway,
+        result.animation.lean
     ]) {
-        if (!isObject(animation[group])) {
-            animation[group] =
-                clone(
-                    DEFAULT_CONFIG.animation[group]
-                );
-        }
-
-        animation[group].enabled =
-            booleanValue(
-                animation[group].enabled,
-                DEFAULT_CONFIG.animation[group].enabled
-            );
-
-        animation[group].amount =
-            clampNumber(
-                animation[group].amount,
+        group.amount =
+            clamp(
+                group.amount,
                 0,
-                10,
-                DEFAULT_CONFIG.animation[group].amount
+                2,
+                1
             );
 
-        animation[group].maximum =
-            clampNumber(
-                animation[group].maximum,
+        group.maximum =
+            clamp(
+                group.maximum,
                 0,
-                10,
-                DEFAULT_CONFIG.animation[group].maximum
+                2,
+                1
             );
     }
 
-    if (!isObject(animation.poses)) {
-        animation.poses =
-            clone(
-                DEFAULT_CONFIG.animation.poses
-            );
-    }
-
-    for (const pose of Object.keys(
-        DEFAULT_CONFIG.animation.poses
-    )) {
-        animation.poses[pose] =
-            booleanValue(
-                animation.poses[pose],
-                DEFAULT_CONFIG.animation.poses[pose]
-            );
-    }
-}
-
-function validateGameplay(config) {
-    if (!isObject(config.gameplay)) {
-        config.gameplay =
-            clone(DEFAULT_CONFIG.gameplay);
-    }
-
-    for (const key of Object.keys(
-        DEFAULT_CONFIG.gameplay
-    )) {
-        config.gameplay[key] =
-            booleanValue(
-                config.gameplay[key],
-                DEFAULT_CONFIG.gameplay[key]
-            );
-    }
-}
-
-function validateCompatibility(config) {
-    if (!isObject(config.compatibility)) {
-        config.compatibility =
-            clone(
-                DEFAULT_CONFIG.compatibility
-            );
-    }
-
-    for (const key of [
-        "addons",
-        "resourcePacks",
-        "texturePacks",
-        "customAnimations",
-        "customPlayerModels",
-        "avoidEntityMutation",
-        "avoidGameplayMutation",
-        "avoidInputMutation"
-    ]) {
-        config.compatibility[key] =
-            booleanValue(
-                config.compatibility[key],
-                DEFAULT_CONFIG.compatibility[key]
-            );
-    }
-
-    config.compatibility.animationConflictPolicy =
-        Object.values(
-            ANIMATION_CONFLICT_POLICIES
-        ).includes(
-            config.compatibility.animationConflictPolicy
-        )
-            ? config.compatibility.animationConflictPolicy
-            : DEFAULT_CONFIG.compatibility
-                .animationConflictPolicy;
-
-    config.compatibility.renderConflictPolicy =
-        Object.values(
-            RENDER_CONFLICT_POLICIES
-        ).includes(
-            config.compatibility.renderConflictPolicy
-        )
-            ? config.compatibility.renderConflictPolicy
-            : DEFAULT_CONFIG.compatibility
-                .renderConflictPolicy;
-}
-
-function validateMultiplayer(config) {
-    if (!isObject(config.multiplayer)) {
-        config.multiplayer =
-            clone(
-                DEFAULT_CONFIG.multiplayer
-            );
-    }
-
-    for (const key of Object.keys(
-        DEFAULT_CONFIG.multiplayer
-    )) {
-        config.multiplayer[key] =
-            booleanValue(
-                config.multiplayer[key],
-                DEFAULT_CONFIG.multiplayer[key]
-            );
-    }
-}
-
-function validateControls(config) {
-    if (!isObject(config.controls)) {
-        config.controls =
-            clone(DEFAULT_CONFIG.controls);
-    }
-
-    for (const key of Object.keys(
-        DEFAULT_CONFIG.controls
-    )) {
-        config.controls[key] =
-            booleanValue(
-                config.controls[key],
-                DEFAULT_CONFIG.controls[key]
-            );
-    }
-}
-
-function validatePerformance(config) {
-    if (!isObject(config.performance)) {
-        config.performance =
-            clone(
-                DEFAULT_CONFIG.performance
-            );
-    }
-
-    const performance =
-        config.performance;
-
-    for (const key of [
-        "enabled",
-        "cachePlayerState",
-        "cachePoseState",
-        "cacheVisibilityState",
-        "updateOnlyWhenChanged",
-        "skipInvalidPlayers",
-        "lowPowerMode"
-    ]) {
-        performance[key] =
-            booleanValue(
-                performance[key],
-                DEFAULT_CONFIG.performance[key]
-            );
-    }
-
-    performance.updateInterval =
+    result.performance.updateInterval =
         Math.max(
             1,
             Math.floor(
-                clampNumber(
-                    performance.updateInterval,
+                clamp(
+                    result.performance.updateInterval,
                     1,
                     20,
-                    DEFAULT_CONFIG.performance
-                        .updateInterval
+                    1
                 )
             )
         );
-
-    performance.maxUpdatesPerTick =
-        Math.max(
-            1,
-            Math.floor(
-                clampNumber(
-                    performance.maxUpdatesPerTick,
-                    1,
-                    100,
-                    DEFAULT_CONFIG.performance
-                        .maxUpdatesPerTick
-                )
-            )
-        );
-}
-
-function validateDebugging(config) {
-    if (!isObject(config.debugging)) {
-        config.debugging =
-            clone(
-                DEFAULT_CONFIG.debugging
-            );
-    }
-
-    for (const key of Object.keys(
-        DEFAULT_CONFIG.debugging
-    )) {
-        config.debugging[key] =
-            booleanValue(
-                config.debugging[key],
-                DEFAULT_CONFIG.debugging[key]
-            );
-    }
-}
-
-function validate(config = {}) {
-    const result = deepMerge(
-        DEFAULT_CONFIG,
-        isObject(config)
-            ? config
-            : {}
-    );
-
-    result.version =
-        CONFIG_VERSION;
-
-    result.enabled =
-        booleanValue(
-            result.enabled,
-            DEFAULT_CONFIG.enabled
-        );
-
-    validateCamera(result);
-    validateBody(result);
-    validateAnimation(result);
-    validateGameplay(result);
-    validateCompatibility(result);
-    validateMultiplayer(result);
-    validateControls(result);
-    validatePerformance(result);
-    validateDebugging(result);
 
     return result;
 }
 
-function createRuntimeConfig(config) {
-    return validate(
-        config ?? DEFAULT_CONFIG
+function loadGlobal() {
+    if (
+        globalLoaded &&
+        globalConfig
+    ) {
+        return clone(globalConfig);
+    }
+
+    let stored = null;
+
+    try {
+        stored = loadWorldConfig();
+    } catch {
+        stored = null;
+    }
+
+    globalConfig = validate(
+        stored ?? DEFAULT_CONFIG
     );
+
+    globalLoaded = true;
+
+    try {
+        saveWorldConfig(globalConfig);
+    } catch {
+        // Configuration persistence is optional.
+    }
+
+    return clone(globalConfig);
 }
 
 function getPlayerEntry(player) {
@@ -922,8 +518,7 @@ function getPlayerEntry(player) {
     if (!entry) {
         entry = {
             loaded: false,
-            config: null,
-            revision: 0
+            config: null
         };
 
         playerConfigs.set(
@@ -935,11 +530,7 @@ function getPlayerEntry(player) {
     return entry;
 }
 
-function loadPlayerRuntimeConfig(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
+function loadPlayer(player) {
     const entry =
         getPlayerEntry(player);
 
@@ -954,113 +545,83 @@ function loadPlayerRuntimeConfig(player) {
     let stored = null;
 
     try {
-        stored =
-            loadPlayerConfig(player);
+        stored = loadPlayerConfig(player);
     } catch {
         stored = null;
     }
 
-    entry.config =
-        createRuntimeConfig(
-            stored ?? {}
-        );
+    entry.config = validate(
+        stored ?? {}
+    );
 
     entry.loaded = true;
-    entry.revision = revision;
 
     return clone(entry.config);
 }
 
-function loadGlobalRuntimeConfig() {
-    if (
-        globalConfigLoaded &&
-        globalConfigCache
-    ) {
-        return clone(
-            globalConfigCache
-        );
-    }
-
-    let stored = null;
-
-    try {
-        stored =
-            loadWorldConfig();
-    } catch {
-        stored = null;
-    }
-
-    const validated =
-        createRuntimeConfig(
-            stored ?? {}
-        );
-
-    if (
-        !stored ||
-        JSON.stringify(stored) !==
-        JSON.stringify(validated)
-    ) {
-        try {
-            saveWorldConfig(validated);
-        } catch {
-        }
-    }
-
-    globalConfigCache =
-        clone(validated);
-
-    globalConfigLoaded = true;
-
-    return clone(validated);
-}
-
 function getEffectiveConfig(player) {
-    const globalConfig =
-        loadGlobalRuntimeConfig();
+    const global =
+        loadGlobal();
 
     if (!isValidPlayer(player)) {
-        return globalConfig;
+        return global;
     }
 
     const playerConfig =
-        loadPlayerRuntimeConfig(player);
+        loadPlayer(player);
 
     if (!playerConfig) {
-        return globalConfig;
+        return global;
     }
 
     return validate(
-        deepMerge(
-            globalConfig,
+        merge(
+            global,
             playerConfig
         )
     );
 }
 
-function savePlayerRuntimeConfig(
-    player,
-    config
-) {
+function saveGlobal(config) {
+    const validated =
+        validate(config);
+
+    try {
+        if (!saveWorldConfig(validated)) {
+            return false;
+        }
+    } catch {
+        return false;
+    }
+
+    globalConfig =
+        clone(validated);
+
+    globalLoaded = true;
+
+    revision++;
+
+    return true;
+}
+
+function savePlayer(player, config) {
     if (!isValidPlayer(player)) {
         return false;
     }
 
     const validated =
-        createRuntimeConfig(config);
-
-    let success = false;
+        validate(config);
 
     try {
-        success =
-            savePlayerConfig(
+        if (
+            !savePlayerConfig(
                 player,
                 validated
-            );
+            )
+        ) {
+            return false;
+        }
     } catch {
-        success = false;
-    }
-
-    if (!success) {
         return false;
     }
 
@@ -1071,81 +632,15 @@ function savePlayerRuntimeConfig(
         entry.loaded = true;
         entry.config =
             clone(validated);
-        entry.revision =
-            revision + 1;
     }
 
-    bumpRevision();
+    revision++;
 
     return true;
 }
 
-function setMultiple(
-    values,
-    player = null
-) {
-    if (!isObject(values)) {
-        return false;
-    }
-
-    const isGlobal =
-        player === null;
-
-    if (
-        !isGlobal &&
-        !isValidPlayer(player)
-    ) {
-        return false;
-    }
-
-    const allowedPaths =
-        isGlobal
-            ? GLOBAL_PATHS
-            : PLAYER_PATHS;
-
-    for (const path of Object.keys(values)) {
-        if (!allowedPaths.has(path)) {
-            return false;
-        }
-    }
-
-    const config =
-        isGlobal
-            ? loadGlobalRuntimeConfig()
-            : loadPlayerRuntimeConfig(player);
-
-    if (!config) {
-        return false;
-    }
-
-    for (const [path, value] of Object.entries(
-        values
-    )) {
-        setPath(
-            config,
-            path,
-            value
-        );
-    }
-
-    const validated =
-        createRuntimeConfig(config);
-
-    if (isGlobal) {
-        return commitGlobalConfig(
-            validated
-        );
-    }
-
-    return savePlayerRuntimeConfig(
-        player,
-        validated
-    );
-}
-
 export function initialize() {
-    const config =
-        loadGlobalRuntimeConfig();
+    const config = loadGlobal();
 
     initialized = true;
 
@@ -1161,30 +656,17 @@ export function getConfig(player = null) {
 }
 
 export function getGlobalConfig() {
-    return loadGlobalRuntimeConfig();
+    return loadGlobal();
 }
 
 export function getPlayerConfig(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return loadPlayerRuntimeConfig(
-        player
-    );
+    return loadPlayer(player);
 }
 
 export function get(
     path,
     player = null
 ) {
-    if (
-        typeof path !== "string" ||
-        path.length === 0
-    ) {
-        return undefined;
-    }
-
     return clone(
         getPath(
             getEffectiveConfig(player),
@@ -1194,36 +676,22 @@ export function get(
 }
 
 export function getGlobal(path) {
-    if (
-        typeof path !== "string" ||
-        path.length === 0
-    ) {
-        return undefined;
-    }
-
     return clone(
         getPath(
-            getGlobalConfig(),
+            loadGlobal(),
             path
         )
     );
 }
 
-export function getPlayer(
-    path,
-    player
-) {
-    if (
-        !isValidPlayer(player) ||
-        typeof path !== "string" ||
-        path.length === 0
-    ) {
+export function getPlayer(path, player) {
+    if (!isValidPlayer(player)) {
         return undefined;
     }
 
     return clone(
         getPath(
-            getPlayerConfig(player),
+            loadPlayer(player),
             path
         )
     );
@@ -1234,68 +702,49 @@ export function set(
     value,
     player = null
 ) {
-    if (
-        typeof path !== "string" ||
-        path.length === 0
-    ) {
-        return false;
-    }
-
-    const isGlobal =
-        player === null;
-
-    if (
-        !isGlobal &&
-        !isValidPlayer(player)
-    ) {
-        return false;
-    }
-
-    const allowedPaths =
-        isGlobal
+    const paths =
+        player === null
             ? GLOBAL_PATHS
             : PLAYER_PATHS;
 
-    if (!allowedPaths.has(path)) {
+    if (!paths.has(path)) {
         return false;
     }
 
     const config =
-        isGlobal
-            ? loadGlobalRuntimeConfig()
-            : loadPlayerRuntimeConfig(player);
+        player === null
+            ? loadGlobal()
+            : loadPlayer(player);
 
     if (!config) {
         return false;
     }
 
-    if (!setPath(config, path, value)) {
+    if (
+        !setPath(
+            config,
+            path,
+            value
+        )
+    ) {
         return false;
     }
 
     const validated =
-        createRuntimeConfig(config);
+        validate(config);
 
-    if (isGlobal) {
-        return commitGlobalConfig(
+    return player === null
+        ? saveGlobal(validated)
+        : savePlayer(
+            player,
             validated
         );
-    }
-
-    return savePlayerRuntimeConfig(
-        player,
-        validated
-    );
 }
 
-export function setGlobal(
-    path,
-    value
-) {
+export function setGlobal(path, value) {
     return set(
         path,
-        value,
-        null
+        value
     );
 }
 
@@ -1309,57 +758,6 @@ export function setPlayer(
         value,
         player
     );
-}
-
-export function reset(player = null) {
-    if (player === null) {
-        let success = false;
-
-        try {
-            success =
-                deleteWorldConfig();
-        } catch {
-            success = false;
-        }
-
-        invalidateGlobalCache();
-
-        if (success) {
-            initialized = false;
-            initialize();
-            bumpRevision();
-        }
-
-        return success;
-    }
-
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    let success = false;
-
-    try {
-        success =
-            deletePlayerConfig(player);
-    } catch {
-        success = false;
-    }
-
-    if (success) {
-        playerConfigs.delete(player);
-        bumpRevision();
-    }
-
-    return success;
-}
-
-export function resetGlobal() {
-    return reset(null);
-}
-
-export function resetPlayer(player) {
-    return reset(player);
 }
 
 export function setEnabled(
@@ -1387,9 +785,11 @@ export function setCameraMode(
     player = null
 ) {
     if (
-        !Object.values(CAMERA_MODES).includes(
-            mode
-        )
+        ![
+            "first_person",
+            "third_person",
+            "vanilla"
+        ].includes(mode)
     ) {
         return false;
     }
@@ -1401,9 +801,7 @@ export function setCameraMode(
     );
 }
 
-export function getCameraMode(
-    player = null
-) {
+export function getCameraMode(player = null) {
     return get(
         "camera.mode",
         player
@@ -1423,34 +821,33 @@ export function setFirstPersonPosition(
             .camera
             .firstPersonPosition;
 
-    return setMultiple(
-        {
-            "camera.firstPersonPosition.x":
-                position.x ?? current.x,
-
-            "camera.firstPersonPosition.y":
-                position.y ?? current.y,
-
-            "camera.firstPersonPosition.z":
-                position.z ?? current.z
-        },
-        player
+    return (
+        set(
+            "camera.firstPersonPosition.x",
+            position.x ?? current.x,
+            player
+        ) &&
+        set(
+            "camera.firstPersonPosition.y",
+            position.y ?? current.y,
+            player
+        ) &&
+        set(
+            "camera.firstPersonPosition.z",
+            position.z ?? current.z,
+            player
+        )
     );
 }
 
 export function getFirstPersonPosition(
     player = null
 ) {
-    const position =
+    return clone(
         getEffectiveConfig(player)
             .camera
-            .firstPersonPosition;
-
-    return {
-        x: position.x,
-        y: position.y,
-        z: position.z
-    };
+            .firstPersonPosition
+    );
 }
 
 export function setThirdPersonPosition(
@@ -1466,34 +863,33 @@ export function setThirdPersonPosition(
             .camera
             .thirdPersonPosition;
 
-    return setMultiple(
-        {
-            "camera.thirdPersonPosition.x":
-                position.x ?? current.x,
-
-            "camera.thirdPersonPosition.y":
-                position.y ?? current.y,
-
-            "camera.thirdPersonPosition.z":
-                position.z ?? current.z
-        },
-        player
+    return (
+        set(
+            "camera.thirdPersonPosition.x",
+            position.x ?? current.x,
+            player
+        ) &&
+        set(
+            "camera.thirdPersonPosition.y",
+            position.y ?? current.y,
+            player
+        ) &&
+        set(
+            "camera.thirdPersonPosition.z",
+            position.z ?? current.z,
+            player
+        )
     );
 }
 
 export function getThirdPersonPosition(
     player = null
 ) {
-    const position =
+    return clone(
         getEffectiveConfig(player)
             .camera
-            .thirdPersonPosition;
-
-    return {
-        x: position.x,
-        y: position.y,
-        z: position.z
-    };
+            .thirdPersonPosition
+    );
 }
 
 export function setFov(
@@ -1517,9 +913,7 @@ export function setFov(
     );
 }
 
-export function getFov(
-    player = null
-) {
+export function getFov(player = null) {
     return get(
         "camera.fov",
         player
@@ -1531,21 +925,10 @@ export function setBodyVisibility(
     visible,
     player
 ) {
-    const paths = {
-        head: "body.visibility.head",
-        body: "body.visibility.body",
-        leftArm: "body.visibility.leftArm",
-        rightArm: "body.visibility.rightArm",
-        leftLeg: "body.visibility.leftLeg",
-        rightLeg: "body.visibility.rightLeg",
-        cape: "body.visibility.cape",
-        armor: "body.visibility.armor",
-        heldItem: "body.visibility.heldItem"
-    };
+    const path =
+        `body.visibility.${part}`;
 
-    const path = paths[part];
-
-    if (!path) {
+    if (!PLAYER_PATHS.has(path)) {
         return false;
     }
 
@@ -1560,27 +943,9 @@ export function isBodyPartVisible(
     part,
     player
 ) {
-    const paths = {
-        head: "body.visibility.head",
-        body: "body.visibility.body",
-        leftArm: "body.visibility.leftArm",
-        rightArm: "body.visibility.rightArm",
-        leftLeg: "body.visibility.leftLeg",
-        rightLeg: "body.visibility.rightLeg",
-        cape: "body.visibility.cape",
-        armor: "body.visibility.armor",
-        heldItem: "body.visibility.heldItem"
-    };
-
-    const path = paths[part];
-
-    if (!path) {
-        return false;
-    }
-
     return Boolean(
         get(
-            path,
+            `body.visibility.${part}`,
             player
         )
     );
@@ -1608,63 +973,6 @@ export function isAnimationEnabled(
     );
 }
 
-export function setPerformancePreset(
-    name
-) {
-    if (
-        typeof name !== "string" ||
-        !Object.prototype.hasOwnProperty.call(
-            PERFORMANCE_PRESETS,
-            name
-        )
-    ) {
-        return false;
-    }
-
-    const config =
-        getGlobalConfig();
-
-    config.performance =
-        deepMerge(
-            config.performance,
-            PERFORMANCE_PRESETS[name]
-        );
-
-    return commitGlobalConfig(
-        config
-    );
-}
-
-export function getPerformanceConfig() {
-    return clone(
-        getGlobalConfig().performance
-    );
-}
-
-export function getCompatibilityConfig() {
-    return clone(
-        getGlobalConfig().compatibility
-    );
-}
-
-export function getGameplayConfig() {
-    return clone(
-        getGlobalConfig().gameplay
-    );
-}
-
-export function getControlsConfig() {
-    return clone(
-        getGlobalConfig().controls
-    );
-}
-
-export function getMultiplayerConfig() {
-    return clone(
-        getGlobalConfig().multiplayer
-    );
-}
-
 export function getCameraConfig(
     player = null
 ) {
@@ -1689,39 +997,94 @@ export function getAnimationConfig(
     );
 }
 
-export function getDebugConfig() {
+export function getGameplayConfig() {
     return clone(
-        getGlobalConfig().debugging
+        loadGlobal().gameplay
     );
 }
 
-export function save(player = null) {
+export function getCompatibilityConfig() {
+    return clone(
+        loadGlobal().compatibility
+    );
+}
+
+export function getControlsConfig() {
+    return clone(
+        loadGlobal().controls
+    );
+}
+
+export function getMultiplayerConfig() {
+    return clone(
+        loadGlobal().multiplayer
+    );
+}
+
+export function getPerformanceConfig() {
+    return clone(
+        loadGlobal().performance
+    );
+}
+
+export function getDebugConfig() {
+    return clone(
+        loadGlobal().debugging
+    );
+}
+
+export function reset(player = null) {
     if (player === null) {
-        return commitGlobalConfig(
-            getGlobalConfig()
-        );
+        try {
+            if (!deleteWorldConfig()) {
+                return false;
+            }
+        } catch {
+            return false;
+        }
+
+        globalConfig = null;
+        globalLoaded = false;
+
+        revision++;
+
+        initialize();
+
+        return true;
     }
 
     if (!isValidPlayer(player)) {
         return false;
     }
 
-    const config =
-        getPlayerConfig(player);
-
-    if (!config) {
+    try {
+        if (!deletePlayerConfig(player)) {
+            return false;
+        }
+    } catch {
         return false;
     }
 
-    return savePlayerRuntimeConfig(
-        player,
-        config
-    );
+    playerConfigs.delete(player);
+
+    revision++;
+
+    return true;
+}
+
+export function resetGlobal() {
+    return reset(null);
+}
+
+export function resetPlayer(player) {
+    return reset(player);
 }
 
 export function reload(player = null) {
     if (player === null) {
-        invalidateGlobalCache();
+        globalConfig = null;
+        globalLoaded = false;
+
         initialized = false;
 
         return initialize();
@@ -1733,9 +1096,7 @@ export function reload(player = null) {
 
     playerConfigs.delete(player);
 
-    return loadPlayerRuntimeConfig(
-        player
-    );
+    return loadPlayer(player);
 }
 
 export function clearPlayerCache(player) {
@@ -1747,12 +1108,13 @@ export function clearPlayerCache(player) {
 }
 
 export function clearCaches() {
+    globalConfig = null;
+    globalLoaded = false;
+
     playerConfigs =
         new WeakMap();
 
-    invalidateGlobalCache();
-
-    bumpRevision();
+    revision++;
 
     return true;
 }
@@ -1782,75 +1144,9 @@ export function getAllowedPlayerPaths() {
 }
 
 export function hasGlobalPath(path) {
-    return (
-        typeof path === "string" &&
-        GLOBAL_PATHS.has(path)
-    );
+    return GLOBAL_PATHS.has(path);
 }
 
 export function hasPlayerPath(path) {
-    return (
-        typeof path === "string" &&
-        PLAYER_PATHS.has(path)
-    );
-}
-
-export function deleteGlobalValue(path) {
-    if (
-        typeof path !== "string" ||
-        !GLOBAL_PATHS.has(path)
-    ) {
-        return false;
-    }
-
-    const config =
-        getGlobalConfig();
-
-    if (!deletePath(config, path)) {
-        return false;
-    }
-
-    return commitGlobalConfig(
-        config
-    );
-}
-
-export function deletePlayerValue(
-    path,
-    player
-) {
-    if (
-        !isValidPlayer(player) ||
-        typeof path !== "string" ||
-        !PLAYER_PATHS.has(path)
-    ) {
-        return false;
-    }
-
-    const config =
-        getPlayerConfig(player);
-
-    if (!config) {
-        return false;
-    }
-
-    if (!deletePath(config, path)) {
-        return false;
-    }
-
-    return savePlayerRuntimeConfig(
-        player,
-        config
-    );
-}
-
-export function getConfigurationStatus() {
-    return {
-        initialized,
-        version: CONFIG_VERSION,
-        revision,
-        globalLoaded: globalConfigLoaded,
-        hasGlobalCache:
-            globalConfigCache !== null
-    };
+    return PLAYER_PATHS.has(path);
 }

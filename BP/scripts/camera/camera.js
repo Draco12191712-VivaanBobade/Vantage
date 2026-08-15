@@ -18,25 +18,6 @@ export const CAMERA_STATUS = Object.freeze({
     FAILED: "failed"
 });
 
-export const DEFAULT_CAMERA_STATE = Object.freeze({
-    mode: CAMERA_MODES.FIRST_PERSON,
-    active: false,
-    status: CAMERA_STATUS.INACTIVE,
-    preset: null,
-    fov: null,
-    fovOverride: false,
-    lastFov: null,
-    lastPreset: null,
-    lastOptions: null,
-    lastUpdate: 0,
-    lastTransition: 0,
-    transitionActive: false,
-    transitionDuration: 0,
-    transitionStart: 0,
-    errorCount: 0,
-    revision: 0
-});
-
 const MIN_FOV = 1;
 const MAX_FOV = 179;
 const DEFAULT_DELTA_TIME = 1 / 20;
@@ -49,22 +30,28 @@ let globalRevision = 0;
 
 function createState() {
     return {
-        mode: DEFAULT_CAMERA_STATE.mode,
-        active: DEFAULT_CAMERA_STATE.active,
-        status: DEFAULT_CAMERA_STATE.status,
-        preset: DEFAULT_CAMERA_STATE.preset,
-        fov: DEFAULT_CAMERA_STATE.fov,
-        fovOverride: DEFAULT_CAMERA_STATE.fovOverride,
-        lastFov: DEFAULT_CAMERA_STATE.lastFov,
-        lastPreset: DEFAULT_CAMERA_STATE.lastPreset,
-        lastOptions: DEFAULT_CAMERA_STATE.lastOptions,
-        lastUpdate: DEFAULT_CAMERA_STATE.lastUpdate,
-        lastTransition: DEFAULT_CAMERA_STATE.lastTransition,
-        transitionActive: DEFAULT_CAMERA_STATE.transitionActive,
-        transitionDuration: DEFAULT_CAMERA_STATE.transitionDuration,
-        transitionStart: DEFAULT_CAMERA_STATE.transitionStart,
-        errorCount: DEFAULT_CAMERA_STATE.errorCount,
-        revision: globalRevision
+        mode: CAMERA_MODES.FIRST_PERSON,
+        active: false,
+        status: CAMERA_STATUS.INACTIVE,
+
+        preset: null,
+        lastPreset: null,
+
+        fov: null,
+        lastFov: null,
+        fovOverride: false,
+
+        lastOptions: null,
+
+        lastUpdate: 0,
+        lastTransition: 0,
+
+        transitionActive: false,
+        transitionDuration: 0,
+        transitionStart: 0,
+
+        errorCount: 0,
+        revision: ++globalRevision
     };
 }
 
@@ -104,15 +91,38 @@ function getCamera(player) {
     }
 
     try {
-        return player.camera ?? null;
+        const camera = player.camera;
+
+        if (!camera) {
+            return null;
+        }
+
+        try {
+            if (
+                "isValid" in camera &&
+                camera.isValid === false
+            ) {
+                return null;
+            }
+        } catch {
+        }
+
+        return camera;
     } catch {
         return null;
     }
 }
 
 function clone(value) {
-    if (value === undefined) {
-        return undefined;
+    if (value === undefined || value === null) {
+        return value;
+    }
+
+    if (
+        typeof value !== "object" ||
+        Array.isArray(value)
+    ) {
+        return value;
     }
 
     try {
@@ -123,38 +133,15 @@ function clone(value) {
 }
 
 function normalizePreset(preset) {
-    if (
-        typeof preset !== "string" ||
-        preset.length === 0
-    ) {
+    if (typeof preset !== "string") {
         return null;
     }
 
-    return preset.trim();
-}
+    const normalized = preset.trim();
 
-function normalizeDelta(deltaTime) {
-    const value = Number.isFinite(deltaTime)
-        ? deltaTime
-        : DEFAULT_DELTA_TIME;
-
-    return clamp(
-        value,
-        0,
-        MAX_DELTA_TIME
-    );
-}
-
-function normalizeFov(fov) {
-    if (!Number.isFinite(fov)) {
-        return null;
-    }
-
-    return clamp(
-        fov,
-        MIN_FOV,
-        MAX_FOV
-    );
+    return normalized.length > 0
+        ? normalized
+        : null;
 }
 
 function normalizeOptions(options) {
@@ -173,6 +160,31 @@ function normalizeOptions(options) {
     }
 
     return clone(options);
+}
+
+function normalizeFov(fov) {
+    if (!Number.isFinite(fov)) {
+        return null;
+    }
+
+    return clamp(
+        fov,
+        MIN_FOV,
+        MAX_FOV
+    );
+}
+
+function normalizeDelta(deltaTime) {
+    const value =
+        Number.isFinite(deltaTime)
+            ? deltaTime
+            : DEFAULT_DELTA_TIME;
+
+    return clamp(
+        value,
+        0,
+        MAX_DELTA_TIME
+    );
 }
 
 function optionsEqual(a, b) {
@@ -194,92 +206,8 @@ function optionsEqual(a, b) {
     }
 }
 
-function markSuccess(
-    player,
-    preset,
-    options,
-    mode = null
-) {
-    const state = getState(player);
-
-    if (!state) {
-        return;
-    }
-
-    state.active = true;
-    state.status = CAMERA_STATUS.ACTIVE;
-    state.preset = preset;
-    state.lastPreset = preset;
-    state.lastOptions = normalizeOptions(options);
-    state.errorCount = 0;
-
-    if (mode !== null) {
-        state.mode = mode;
-    }
-
-    state.revision = ++globalRevision;
-}
-
-function markFailure(player) {
-    const state = getState(player);
-
-    if (!state) {
-        return;
-    }
-
-    state.errorCount++;
-
-    state.status =
-        state.errorCount >=
-            MAX_ERRORS_BEFORE_DEGRADED
-            ? CAMERA_STATUS.DEGRADED
-            : CAMERA_STATUS.FAILED;
-
-    state.revision = ++globalRevision;
-}
-
-function markTransition(
-    player,
-    duration
-) {
-    const state = getState(player);
-
-    if (!state) {
-        return;
-    }
-
-    const normalizedDuration =
-        Number.isFinite(duration)
-            ? Math.max(0, duration)
-            : 0;
-
-    state.transitionActive =
-        normalizedDuration > 0;
-
-    state.transitionDuration =
-        normalizedDuration;
-
-    state.transitionStart =
-        Date.now();
-
-    state.lastTransition =
-        Date.now();
-}
-
-function clearTransitionState(player) {
-    const state = getState(player);
-
-    if (!state) {
-        return;
-    }
-
-    state.transitionActive = false;
-    state.transitionDuration = 0;
-    state.transitionStart = 0;
-}
-
-function extractEaseDuration(options) {
-    if (!options || typeof options !== "object") {
+function getEaseDuration(options) {
+    if (!options) {
         return 0;
     }
 
@@ -307,87 +235,137 @@ function extractEaseDuration(options) {
     return 0;
 }
 
-function applyPreset(
+function startTransition(
     player,
-    preset,
-    options
+    duration
 ) {
-    const camera = getCamera(player);
+    const state = getState(player);
 
-    if (!camera) {
-        markFailure(player);
-        return false;
+    if (!state) {
+        return;
     }
 
-    const normalizedPreset =
-        normalizePreset(preset);
+    const normalizedDuration =
+        Number.isFinite(duration)
+            ? Math.max(0, duration)
+            : 0;
 
-    if (!normalizedPreset) {
-        markFailure(player);
-        return false;
-    }
+    state.transitionDuration =
+        normalizedDuration;
 
-    const normalizedOptions =
-        normalizeOptions(options);
+    state.transitionActive =
+        normalizedDuration > 0;
 
-    try {
-        if (
-            normalizedOptions &&
-            normalizedOptions.easeOptions &&
-            typeof camera.setCameraWithEase === "function"
-        ) {
-            const {
-                easeOptions,
-                ...cameraOptions
-            } = normalizedOptions;
+    state.transitionStart =
+        normalizedDuration > 0
+            ? Date.now()
+            : 0;
 
-            if (
-                Object.keys(cameraOptions).length === 0
-            ) {
-                camera.setCameraWithEase(
-                    normalizedPreset,
-                    easeOptions
-                );
-            } else {
-                camera.setCamera(
-                    normalizedPreset,
-                    cameraOptions
-                );
-            }
-        } else if (
-            normalizedOptions
-        ) {
-            camera.setCamera(
-                normalizedPreset,
-                normalizedOptions
-            );
-        } else {
-            camera.setCamera(
-                normalizedPreset
-            );
-        }
-
-        markSuccess(
-            player,
-            normalizedPreset,
-            normalizedOptions
-        );
-
-        markTransition(
-            player,
-            extractEaseDuration(
-                normalizedOptions
-            )
-        );
-
-        return true;
-    } catch {
-        markFailure(player);
-        return false;
-    }
+    state.lastTransition =
+        Date.now();
 }
 
-function isSamePresetRequest(
+function clearTransition(player) {
+    const state = getState(player);
+
+    if (!state) {
+        return;
+    }
+
+    state.transitionActive = false;
+    state.transitionDuration = 0;
+    state.transitionStart = 0;
+}
+
+function markSuccess(
+    player,
+    preset,
+    options,
+    mode = null
+) {
+    const state = getState(player);
+
+    if (!state) {
+        return;
+    }
+
+    state.active = true;
+    state.status = CAMERA_STATUS.ACTIVE;
+
+    state.preset = preset;
+    state.lastPreset = preset;
+    state.lastOptions = clone(options);
+
+    state.errorCount = 0;
+    state.lastUpdate = Date.now();
+
+    if (mode !== null) {
+        state.mode = mode;
+    }
+
+    state.revision = ++globalRevision;
+}
+
+function markFailure(player) {
+    const state = getState(player);
+
+    if (!state) {
+        return;
+    }
+
+    state.errorCount++;
+
+    if (
+        state.errorCount >=
+        MAX_ERRORS_BEFORE_DEGRADED
+    ) {
+        state.status =
+            CAMERA_STATUS.DEGRADED;
+    } else {
+        state.status =
+            CAMERA_STATUS.FAILED;
+    }
+
+    state.revision = ++globalRevision;
+}
+
+function resolveModeFromPreset(preset) {
+    if (
+        preset ===
+        CAMERA_PRESETS.FIRST_PERSON
+    ) {
+        return CAMERA_MODES.FIRST_PERSON;
+    }
+
+    if (
+        preset ===
+        CAMERA_PRESETS.THIRD_PERSON
+    ) {
+        return CAMERA_MODES.THIRD_PERSON;
+    }
+
+    return null;
+}
+
+function resolvePresetFromMode(mode) {
+    if (
+        mode ===
+        CAMERA_MODES.FIRST_PERSON
+    ) {
+        return CAMERA_PRESETS.FIRST_PERSON;
+    }
+
+    if (
+        mode ===
+        CAMERA_MODES.THIRD_PERSON
+    ) {
+        return CAMERA_PRESETS.THIRD_PERSON;
+    }
+
+    return null;
+}
+
+function isSameRequest(
     player,
     preset,
     options
@@ -402,40 +380,82 @@ function isSamePresetRequest(
         state.preset === preset &&
         optionsEqual(
             state.lastOptions,
-            normalizeOptions(options)
+            options
         )
     );
 }
 
-function resolveModeFromPreset(preset) {
-    if (
-        preset === CAMERA_PRESETS.FIRST_PERSON
-    ) {
-        return CAMERA_MODES.FIRST_PERSON;
-    }
-
-    if (
-        preset === CAMERA_PRESETS.THIRD_PERSON
-    ) {
-        return CAMERA_MODES.THIRD_PERSON;
-    }
-
-    return null;
-}
-
-function applyMode(
-    player,
-    mode,
+function callSetCamera(
+    camera,
+    preset,
     options
 ) {
-    const preset =
-        mode === CAMERA_MODES.FIRST_PERSON
-            ? CAMERA_PRESETS.FIRST_PERSON
-            : mode === CAMERA_MODES.THIRD_PERSON
-                ? CAMERA_PRESETS.THIRD_PERSON
-                : null;
+    if (!camera) {
+        return false;
+    }
 
-    if (!preset) {
+    try {
+        if (
+            options &&
+            options.easeOptions &&
+            typeof camera.setCameraWithEase ===
+            "function"
+        ) {
+            const {
+                easeOptions,
+                ...cameraOptions
+            } = options;
+
+            if (
+                Object.keys(cameraOptions).length ===
+                0
+            ) {
+                camera.setCameraWithEase(
+                    preset,
+                    easeOptions
+                );
+            } else {
+                camera.setCamera(
+                    preset,
+                    cameraOptions
+                );
+            }
+
+            return true;
+        }
+
+        if (options !== undefined) {
+            camera.setCamera(
+                preset,
+                options
+            );
+        } else {
+            camera.setCamera(preset);
+        }
+
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function applyPreset(
+    player,
+    preset,
+    options,
+    mode = null
+) {
+    const normalizedPreset =
+        normalizePreset(preset);
+
+    if (!normalizedPreset) {
+        return false;
+    }
+
+    const camera = getCamera(player);
+
+    if (!camera) {
+        markFailure(player);
         return false;
     }
 
@@ -443,43 +463,53 @@ function applyMode(
         normalizeOptions(options);
 
     if (
-        isSamePresetRequest(
+        isSameRequest(
             player,
-            preset,
+            normalizedPreset,
             normalizedOptions
         )
     ) {
         const state = getState(player);
 
         if (state) {
-            state.mode = mode;
             state.active = true;
-            state.status = CAMERA_STATUS.ACTIVE;
+            state.status =
+                CAMERA_STATUS.ACTIVE;
+
+            if (mode !== null) {
+                state.mode = mode;
+            }
+
             state.lastUpdate = Date.now();
         }
 
         return true;
     }
 
-    const success =
-        applyPreset(
-            player,
-            preset,
+    if (
+        !callSetCamera(
+            camera,
+            normalizedPreset,
             normalizedOptions
-        );
-
-    if (!success) {
+        )
+    ) {
+        markFailure(player);
         return false;
     }
 
-    const state = getState(player);
+    markSuccess(
+        player,
+        normalizedPreset,
+        normalizedOptions,
+        mode
+    );
 
-    if (state) {
-        state.mode = mode;
-        state.active = true;
-        state.status = CAMERA_STATUS.ACTIVE;
-        state.lastUpdate = Date.now();
-    }
+    startTransition(
+        player,
+        getEaseDuration(
+            normalizedOptions
+        )
+    );
 
     return true;
 }
@@ -493,10 +523,19 @@ export function setCamera(
         return false;
     }
 
+    const normalizedPreset =
+        normalizePreset(preset);
+
+    const mode =
+        resolveModeFromPreset(
+            normalizedPreset
+        );
+
     return applyPreset(
         player,
-        preset,
-        options
+        normalizedPreset,
+        options,
+        mode
     );
 }
 
@@ -504,10 +543,11 @@ export function setFirstPerson(
     player,
     options
 ) {
-    return applyMode(
+    return applyPreset(
         player,
-        CAMERA_MODES.FIRST_PERSON,
-        options
+        CAMERA_PRESETS.FIRST_PERSON,
+        options,
+        CAMERA_MODES.FIRST_PERSON
     );
 }
 
@@ -515,10 +555,11 @@ export function setThirdPerson(
     player,
     options
 ) {
-    return applyMode(
+    return applyPreset(
         player,
-        CAMERA_MODES.THIRD_PERSON,
-        options
+        CAMERA_PRESETS.THIRD_PERSON,
+        options,
+        CAMERA_MODES.THIRD_PERSON
     );
 }
 
@@ -527,25 +568,27 @@ export function setMode(
     mode,
     options
 ) {
-    if (
-        mode !== CAMERA_MODES.FIRST_PERSON &&
-        mode !== CAMERA_MODES.THIRD_PERSON
-    ) {
+    const preset =
+        resolvePresetFromMode(mode);
+
+    if (!preset) {
         return false;
     }
 
-    return applyMode(
+    return applyPreset(
         player,
-        mode,
-        options
+        preset,
+        options,
+        mode
     );
 }
 
 export function getMode(player) {
     const state = getState(player);
 
-    return state?.mode ??
-        CAMERA_MODES.FIRST_PERSON;
+    return state
+        ? state.mode
+        : CAMERA_MODES.FIRST_PERSON;
 }
 
 export function isFirstPerson(player) {
@@ -574,8 +617,9 @@ export function isActive(player) {
 export function getStatus(player) {
     const state = getState(player);
 
-    return state?.status ??
-        CAMERA_STATUS.INACTIVE;
+    return state
+        ? state.status
+        : CAMERA_STATUS.INACTIVE;
 }
 
 export function isDegraded(player) {
@@ -613,7 +657,8 @@ export function setDefaultCamera(
     try {
         if (
             normalizedEase !== undefined &&
-            typeof camera.setDefaultCamera === "function"
+            typeof camera.setDefaultCamera ===
+            "function"
         ) {
             camera.setDefaultCamera(
                 normalizedPreset,
@@ -624,50 +669,55 @@ export function setDefaultCamera(
                 normalizedPreset
             );
         }
-
-        const state = getState(player);
-
-        if (state) {
-            state.preset =
-                normalizedPreset;
-
-            state.lastPreset =
-                normalizedPreset;
-
-            state.lastOptions =
-                normalizedEase;
-
-            state.active = true;
-            state.status =
-                CAMERA_STATUS.ACTIVE;
-
-            const mode =
-                resolveModeFromPreset(
-                    normalizedPreset
-                );
-
-            if (mode !== null) {
-                state.mode = mode;
-            }
-
-            state.lastUpdate =
-                Date.now();
-
-            state.errorCount = 0;
-            state.revision =
-                ++globalRevision;
-        }
-
-        clearTransitionState(player);
-
-        return true;
     } catch {
         markFailure(player);
         return false;
     }
+
+    const state = getState(player);
+
+    if (state) {
+        state.active = true;
+        state.status =
+            CAMERA_STATUS.ACTIVE;
+
+        state.preset =
+            normalizedPreset;
+
+        state.lastPreset =
+            normalizedPreset;
+
+        state.lastOptions =
+            clone(normalizedEase);
+
+        state.lastUpdate =
+            Date.now();
+
+        state.errorCount = 0;
+
+        const mode =
+            resolveModeFromPreset(
+                normalizedPreset
+            );
+
+        if (mode !== null) {
+            state.mode = mode;
+        }
+
+        state.revision =
+            ++globalRevision;
+    }
+
+    clearTransition(player);
+
+    return true;
 }
 
 export function clearCamera(player) {
+    if (!isValidPlayer(player)) {
+        return false;
+    }
+
     const camera = getCamera(player);
 
     if (!camera) {
@@ -676,32 +726,36 @@ export function clearCamera(player) {
 
     try {
         camera.clear();
-
-        const state = getState(player);
-
-        if (state) {
-            state.active = false;
-            state.status =
-                CAMERA_STATUS.INACTIVE;
-            state.preset = null;
-            state.lastPreset = null;
-            state.lastOptions = null;
-            state.fov = null;
-            state.lastFov = null;
-            state.fovOverride = false;
-            state.errorCount = 0;
-            state.lastUpdate = Date.now();
-            state.revision =
-                ++globalRevision;
-        }
-
-        clearTransitionState(player);
-
-        return true;
     } catch {
         markFailure(player);
         return false;
     }
+
+    const state = getState(player);
+
+    if (state) {
+        state.active = false;
+        state.status =
+            CAMERA_STATUS.INACTIVE;
+
+        state.preset = null;
+        state.lastPreset = null;
+        state.lastOptions = null;
+
+        state.fov = null;
+        state.lastFov = null;
+        state.fovOverride = false;
+
+        state.errorCount = 0;
+        state.lastUpdate = Date.now();
+
+        state.revision =
+            ++globalRevision;
+    }
+
+    clearTransition(player);
+
+    return true;
 }
 
 export function setFov(
@@ -722,80 +776,78 @@ export function setFov(
         return false;
     }
 
-    const value =
+    const normalizedFov =
         normalizeFov(fov);
 
-    if (value === null) {
+    if (normalizedFov === null) {
         return false;
     }
+
+    const normalizedEase =
+        normalizeOptions(easeOptions);
 
     const state = getState(player);
 
     if (
         state &&
         state.fovOverride &&
-        state.fov === value &&
+        state.fov === normalizedFov &&
         optionsEqual(
             state.lastOptions?.fovEaseOptions,
-            easeOptions
+            normalizedEase
         )
     ) {
         return true;
     }
 
-    const normalizedEase =
-        normalizeOptions(easeOptions);
-
     try {
-        if (
-            normalizedEase === undefined
-        ) {
+        if (normalizedEase === undefined) {
             camera.setFov({
-                fov: value
+                fov: normalizedFov
             });
         } else {
             camera.setFov({
-                fov: value,
-                easeOptions:
-                    normalizedEase
+                fov: normalizedFov,
+                easeOptions: normalizedEase
             });
         }
-
-        if (state) {
-            state.lastFov =
-                state.fov;
-
-            state.fov = value;
-            state.fovOverride = true;
-            state.lastUpdate = Date.now();
-
-            state.lastOptions = {
-                ...(
-                    state.lastOptions ?? {}
-                ),
-                fovEaseOptions:
-                    normalizedEase
-            };
-
-            state.errorCount = 0;
-            state.status =
-                CAMERA_STATUS.ACTIVE;
-
-            state.revision =
-                ++globalRevision;
-        }
-
-        return true;
     } catch {
         markFailure(player);
         return false;
     }
+
+    if (state) {
+        state.lastFov = state.fov;
+        state.fov = normalizedFov;
+        state.fovOverride = true;
+
+        state.lastOptions = {
+            ...(state.lastOptions ?? {}),
+            fovEaseOptions: clone(
+                normalizedEase
+            )
+        };
+
+        state.lastUpdate = Date.now();
+        state.errorCount = 0;
+        state.status =
+            CAMERA_STATUS.ACTIVE;
+
+        state.revision =
+            ++globalRevision;
+    }
+
+    return true;
 }
 
 export function clearFov(
     player,
     easeOptions
 ) {
+    if (!isValidPlayer(player)) {
+        return false;
+    }
+
     const camera = getCamera(player);
 
     if (!camera) {
@@ -806,56 +858,49 @@ export function clearFov(
         normalizeOptions(easeOptions);
 
     try {
-        if (
-            normalizedEase === undefined
-        ) {
+        if (normalizedEase === undefined) {
             camera.setFov();
         } else {
             camera.setFov({
-                easeOptions:
-                    normalizedEase
+                easeOptions: normalizedEase
             });
         }
-
-        const state = getState(player);
-
-        if (state) {
-            state.lastFov =
-                state.fov;
-
-            state.fov = null;
-            state.fovOverride = false;
-            state.lastUpdate = Date.now();
-
-            if (state.lastOptions) {
-                const {
-                    fovEaseOptions,
-                    ...remaining
-                } = state.lastOptions;
-
-                state.lastOptions =
-                    remaining;
-            }
-
-            state.revision =
-                ++globalRevision;
-        }
-
-        return true;
     } catch {
         markFailure(player);
         return false;
     }
+
+    const state = getState(player);
+
+    if (state) {
+        state.lastFov = state.fov;
+        state.fov = null;
+        state.fovOverride = false;
+
+        state.lastUpdate = Date.now();
+
+        if (state.lastOptions) {
+            const {
+                fovEaseOptions,
+                ...remaining
+            } = state.lastOptions;
+
+            state.lastOptions = remaining;
+        }
+
+        state.revision =
+            ++globalRevision;
+    }
+
+    return true;
 }
 
 export function getFov(player) {
-    return getState(player)?.fov ??
-        null;
+    return getState(player)?.fov ?? null;
 }
 
 export function getLastFov(player) {
-    return getState(player)?.lastFov ??
-        null;
+    return getState(player)?.lastFov ?? null;
 }
 
 export function hasFovOverride(player) {
@@ -865,27 +910,19 @@ export function hasFovOverride(player) {
 }
 
 export function getPreset(player) {
-    return getState(player)?.preset ??
-        null;
+    return getState(player)?.preset ?? null;
 }
 
 export function getLastPreset(player) {
-    return getState(player)?.lastPreset ??
-        null;
+    return getState(player)?.lastPreset ?? null;
 }
 
 export function isTransitionActive(player) {
     const state = getState(player);
 
-    if (!state) {
-        return false;
-    }
-
-    if (!state.transitionActive) {
-        return false;
-    }
-
     if (
+        !state ||
+        !state.transitionActive ||
         state.transitionDuration <= 0
     ) {
         return false;
@@ -899,10 +936,7 @@ export function isTransitionActive(player) {
         elapsed >=
         state.transitionDuration * 1000
     ) {
-        state.transitionActive = false;
-        state.transitionDuration = 0;
-        state.transitionStart = 0;
-
+        clearTransition(player);
         return false;
     }
 
@@ -932,6 +966,28 @@ export function getTransitionProgress(player) {
     );
 }
 
+export function setTransitionState(
+    player,
+    active,
+    duration = 0
+) {
+    if (!isValidPlayer(player)) {
+        return false;
+    }
+
+    if (!active) {
+        clearTransition(player);
+        return true;
+    }
+
+    startTransition(
+        player,
+        duration
+    );
+
+    return true;
+}
+
 export function updateCamera(
     player,
     deltaTime = DEFAULT_DELTA_TIME
@@ -952,10 +1008,9 @@ export function updateCamera(
     state.lastUpdate =
         normalizedDelta;
 
-    state.revision =
-        ++globalRevision;
-
-    isTransitionActive(player);
+    if (state.transitionActive) {
+        isTransitionActive(player);
+    }
 
     return true;
 }
@@ -965,7 +1020,23 @@ export function getCameraState(player) {
 
     if (!state) {
         return {
-            ...DEFAULT_CAMERA_STATE
+            mode: CAMERA_MODES.FIRST_PERSON,
+            active: false,
+            status: CAMERA_STATUS.INACTIVE,
+            preset: null,
+            fov: null,
+            fovOverride: false,
+            lastFov: null,
+            lastPreset: null,
+            lastOptions: null,
+            lastUpdate: 0,
+            lastTransition: 0,
+            transitionActive: false,
+            transitionDuration: 0,
+            transitionStart: 0,
+            transitionProgress: 1,
+            errorCount: 0,
+            revision: globalRevision
         };
     }
 
@@ -973,24 +1044,34 @@ export function getCameraState(player) {
         mode: state.mode,
         active: state.active,
         status: state.status,
+
         preset: state.preset,
+
         fov: state.fov,
         fovOverride: state.fovOverride,
         lastFov: state.lastFov,
+
         lastPreset: state.lastPreset,
         lastOptions: clone(
             state.lastOptions
         ),
+
         lastUpdate: state.lastUpdate,
-        lastTransition: state.lastTransition,
+        lastTransition:
+            state.lastTransition,
+
         transitionActive:
             isTransitionActive(player),
+
         transitionDuration:
             state.transitionDuration,
+
         transitionStart:
             state.transitionStart,
+
         transitionProgress:
             getTransitionProgress(player),
+
         errorCount: state.errorCount,
         revision: state.revision
     };
@@ -1001,19 +1082,7 @@ export function getCameraObject(player) {
 }
 
 export function getCameraPresetForMode(mode) {
-    if (
-        mode === CAMERA_MODES.FIRST_PERSON
-    ) {
-        return CAMERA_PRESETS.FIRST_PERSON;
-    }
-
-    if (
-        mode === CAMERA_MODES.THIRD_PERSON
-    ) {
-        return CAMERA_PRESETS.THIRD_PERSON;
-    }
-
-    return null;
+    return resolvePresetFromMode(mode);
 }
 
 export function getModeForPreset(preset) {
@@ -1034,30 +1103,6 @@ export function isPresetSupported(preset) {
     );
 }
 
-export function setTransitionState(
-    player,
-    active,
-    duration = 0
-) {
-    const state = getState(player);
-
-    if (!state) {
-        return false;
-    }
-
-    if (!active) {
-        clearTransitionState(player);
-        return true;
-    }
-
-    markTransition(
-        player,
-        duration
-    );
-
-    return true;
-}
-
 export function resetCameraState(player) {
     if (!isValidPlayer(player)) {
         return false;
@@ -1071,17 +1116,15 @@ export function resetAllCameraState(players) {
         return 0;
     }
 
-    let reset = 0;
+    let count = 0;
 
     for (const player of players) {
-        if (
-            resetCameraState(player)
-        ) {
-            reset++;
+        if (resetCameraState(player)) {
+            count++;
         }
     }
 
-    return reset;
+    return count;
 }
 
 export function getRevision() {
@@ -1089,14 +1132,12 @@ export function getRevision() {
 }
 
 export function getConstants() {
-    return {
+    return Object.freeze({
         minFov: MIN_FOV,
         maxFov: MAX_FOV,
-        defaultDeltaTime:
-            DEFAULT_DELTA_TIME,
-        maxDeltaTime:
-            MAX_DELTA_TIME,
+        defaultDeltaTime: DEFAULT_DELTA_TIME,
+        maxDeltaTime: MAX_DELTA_TIME,
         maxErrorsBeforeDegraded:
             MAX_ERRORS_BEFORE_DEGRADED
-    };
+    });
 }

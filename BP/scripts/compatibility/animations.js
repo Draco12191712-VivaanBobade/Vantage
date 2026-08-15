@@ -35,11 +35,8 @@ const ANIMATION_STATES = Object.freeze({
 });
 
 const ANIMATION_LAYERS = Object.freeze({
-    BASE: "base",
-    MOVEMENT: "movement",
+    BODY: "body",
     POSE: "pose",
-    CAMERA: "camera",
-    OVERLAY: "overlay",
     EXTERNAL: "external"
 });
 
@@ -47,8 +44,7 @@ const CONFLICT_TYPES = Object.freeze({
     CUSTOM_ANIMATION: "custom_animation",
     CUSTOM_PLAYER_MODEL: "custom_player_model",
     EXTERNAL_CONTROLLER: "external_animation_controller",
-    EXTERNAL_RENDER_CONTROLLER: "external_render_controller",
-    UNKNOWN: "unknown"
+    EXTERNAL_RENDER_CONTROLLER: "external_render_controller"
 });
 
 const CONFLICT_POLICIES = Object.freeze({
@@ -60,33 +56,9 @@ const CONFLICT_POLICIES = Object.freeze({
 
 const playerStates = new WeakMap();
 const animationProfiles = new Map();
-const registeredControllers = new Map();
 
 let revision = 0;
 let initialized = false;
-
-function clone(value) {
-    if (value === undefined) {
-        return undefined;
-    }
-
-    if (value === null) {
-        return null;
-    }
-
-    if (
-        typeof value !== "object" ||
-        value instanceof Date
-    ) {
-        return value;
-    }
-
-    try {
-        return JSON.parse(JSON.stringify(value));
-    } catch {
-        return null;
-    }
-}
 
 function isValidPlayer(player) {
     try {
@@ -100,25 +72,41 @@ function isValidPlayer(player) {
     }
 }
 
-function normalizeString(value, fallback = "") {
-    return typeof value === "string" && value.trim().length > 0
+function clone(value) {
+    if (value === undefined || value === null) {
+        return value;
+    }
+
+    if (typeof value !== "object") {
+        return value;
+    }
+
+    try {
+        return JSON.parse(JSON.stringify(value));
+    } catch {
+        return null;
+    }
+}
+
+function string(value, fallback = "") {
+    return typeof value === "string" && value.trim()
         ? value.trim()
         : fallback;
 }
 
-function normalizeNumber(value, fallback = 0) {
-    return typeof value === "number" && Number.isFinite(value)
-        ? value
-        : fallback;
-}
-
-function normalizeBoolean(value, fallback = false) {
+function boolean(value, fallback = false) {
     return typeof value === "boolean"
         ? value
         : fallback;
 }
 
-function normalizeArray(value) {
+function number(value, fallback = 0) {
+    return typeof value === "number" && Number.isFinite(value)
+        ? value
+        : fallback;
+}
+
+function array(value) {
     if (!Array.isArray(value)) {
         return [];
     }
@@ -129,39 +117,35 @@ function normalizeArray(value) {
                 .filter(
                     item =>
                         typeof item === "string" &&
-                        item.trim().length > 0
+                        item.trim()
                 )
                 .map(item => item.trim())
         )
     ];
 }
 
-function normalizeLayer(layer) {
-    return Object.values(ANIMATION_LAYERS).includes(layer)
-        ? layer
-        : ANIMATION_LAYERS.BASE;
-}
-
-function normalizeState(state) {
-    return Object.values(ANIMATION_STATES).includes(state)
-        ? state
+function stateValue(value) {
+    return Object.values(ANIMATION_STATES).includes(value)
+        ? value
         : ANIMATION_STATES.UNKNOWN;
 }
 
-function normalizeStrategy(strategy) {
-    return Object.values(ANIMATION_STRATEGIES).includes(strategy)
-        ? strategy
+function strategyValue(value) {
+    return Object.values(ANIMATION_STRATEGIES).includes(value)
+        ? value
         : ANIMATION_STRATEGIES.VANILLA;
 }
 
-function normalizePolicy(policy) {
-    return Object.values(CONFLICT_POLICIES).includes(policy)
-        ? policy
-        : CONFLICT_POLICIES.PRESERVE;
+function layerValue(value) {
+    return Object.values(ANIMATION_LAYERS).includes(value)
+        ? value
+        : ANIMATION_LAYERS.BODY;
 }
 
-function bumpRevision() {
-    revision++;
+function policyValue(value) {
+    return Object.values(CONFLICT_POLICIES).includes(value)
+        ? value
+        : CONFLICT_POLICIES.PRESERVE;
 }
 
 function createPlayerState() {
@@ -198,84 +182,13 @@ function getPlayerState(player) {
     return state;
 }
 
-function getAnimationProfile(identifier) {
-    const id = normalizeString(identifier);
-
-    if (!id) {
-        return null;
-    }
-
-    return animationProfiles.get(id) ?? null;
-}
-
-function normalizeAnimationProfile(identifier, profile = {}) {
-    const id = normalizeString(identifier);
-
-    if (!id) {
-        return null;
-    }
-
-    const source =
-        profile &&
-            typeof profile === "object"
-            ? profile
-            : {};
-
-    return {
-        identifier: id,
-        name: normalizeString(
-            source.name,
-            id
-        ),
-        enabled: normalizeBoolean(
-            source.enabled,
-            true
-        ),
-        priority: normalizeNumber(
-            source.priority,
-            0
-        ),
-        layer: normalizeLayer(
-            source.layer
-        ),
-        external: normalizeBoolean(
-            source.external,
-            false
-        ),
-        customModel: normalizeBoolean(
-            source.customModel,
-            false
-        ),
-        controller: normalizeBoolean(
-            source.controller,
-            false
-        ),
-        renderController: normalizeBoolean(
-            source.renderController,
-            false
-        ),
-        states: normalizeArray(
-            source.states
-        ),
-        conflicts: normalizeArray(
-            source.conflicts
-        ),
-        metadata: clone(
-            source.metadata ?? {}
-        )
-    };
-}
-
 function getAnimationConfigSafe() {
     try {
         const config = getAnimationConfig();
 
-        return (
-            config &&
-                typeof config === "object"
-                ? config
-                : {}
-        );
+        return config && typeof config === "object"
+            ? config
+            : {};
     } catch {
         return {};
     }
@@ -285,35 +198,28 @@ function getCompatibilityConfigSafe() {
     try {
         const config = getCompatibilityConfig();
 
-        return (
-            config &&
-                typeof config === "object"
-                ? config
-                : {}
-        );
+        return config && typeof config === "object"
+            ? config
+            : {};
     } catch {
         return {};
     }
 }
 
-function getConfiguredAnimationEnabled() {
-    const config = getAnimationConfigSafe();
-
-    return config.enabled !== false;
+function animationsEnabled() {
+    return getAnimationConfigSafe().enabled !== false;
 }
 
-function getConfiguredPolicy() {
-    const compatibility =
-        getCompatibilityConfigSafe();
+function getPolicy() {
+    const config = getCompatibilityConfigSafe();
 
-    return normalizePolicy(
-        compatibility.animationConflictPolicy
+    return policyValue(
+        config.animationConflictPolicy
     );
 }
 
-function getPoseEnabled(state) {
-    const config =
-        getAnimationConfigSafe();
+function poseEnabled(state) {
+    const config = getAnimationConfigSafe();
 
     const poses =
         config.poses &&
@@ -321,25 +227,20 @@ function getPoseEnabled(state) {
             ? config.poses
             : {};
 
-    const poseMap = {
-        [ANIMATION_STATES.IDLE]: poses.idle,
-        [ANIMATION_STATES.WALKING]: poses.walking,
-        [ANIMATION_STATES.SPRINTING]: poses.sprinting,
-        [ANIMATION_STATES.SNEAKING]: poses.sneaking,
-        [ANIMATION_STATES.SWIMMING]: poses.swimming,
-        [ANIMATION_STATES.CRAWLING]: poses.crawling,
-        [ANIMATION_STATES.JUMPING]: poses.jumping,
-        [ANIMATION_STATES.FALLING]: poses.falling,
-        [ANIMATION_STATES.CLIMBING]: poses.climbing,
-        [ANIMATION_STATES.GLIDING]: poses.gliding,
-        [ANIMATION_STATES.RIDING]: poses.riding,
-        [ANIMATION_STATES.FLYING]: poses.flying
-    };
-
-    return poseMap[state] !== false;
+    return poses[state] !== false;
 }
 
-function detectPlayerConflictState(player) {
+function getRecommendedStrategySafe(player) {
+    try {
+        return strategyValue(
+            getRecommendedAnimationStrategy(player)
+        );
+    } catch {
+        return ANIMATION_STRATEGIES.VANILLA;
+    }
+}
+
+function detectConflicts(player) {
     if (!isValidPlayer(player)) {
         return {
             externalAnimationDetected: false,
@@ -349,8 +250,7 @@ function detectPlayerConflictState(player) {
         };
     }
 
-    const compatibility =
-        getCompatibilityConfigSafe();
+    const config = getCompatibilityConfigSafe();
 
     let controllerConflict = false;
     let renderConflict = false;
@@ -382,18 +282,17 @@ function detectPlayerConflictState(player) {
     }
 
     try {
-        packConflict =
-            playerHasConflicts(player);
+        packConflict = playerHasConflicts(player);
     } catch {
         packConflict = false;
     }
 
     return {
         externalAnimationDetected:
-            compatibility.customAnimations === true,
+            config.customAnimations === true,
 
         customModelDetected:
-            compatibility.customPlayerModels === true,
+            config.customPlayerModels === true,
 
         controllerConflict:
             controllerConflict || packConflict,
@@ -402,28 +301,12 @@ function detectPlayerConflictState(player) {
     };
 }
 
-function getRecommendedStrategy(player) {
-    try {
-        return normalizeStrategy(
-            getRecommendedAnimationStrategy(player)
-        );
-    } catch {
-        return ANIMATION_STRATEGIES.VANILLA;
-    }
-}
-
-function calculateStrategy(player) {
-    if (!getConfiguredAnimationEnabled()) {
+function calculateStrategy(player, state) {
+    if (!animationsEnabled()) {
         return ANIMATION_STRATEGIES.DISABLED;
     }
 
-    const state = getPlayerState(player);
-
-    if (!state) {
-        return ANIMATION_STRATEGIES.VANILLA;
-    }
-
-    const policy = getConfiguredPolicy();
+    const policy = getPolicy();
 
     if (policy === CONFLICT_POLICIES.DISABLE) {
         return ANIMATION_STRATEGIES.DISABLED;
@@ -438,7 +321,7 @@ function calculateStrategy(player) {
     }
 
     const recommended =
-        getRecommendedStrategy(player);
+        getRecommendedStrategySafe(player);
 
     if (
         recommended === ANIMATION_STRATEGIES.DISABLED ||
@@ -448,10 +331,10 @@ function calculateStrategy(player) {
     }
 
     if (
+        state.externalAnimationDetected ||
         state.customModelDetected ||
         state.controllerConflict ||
-        state.renderConflict ||
-        state.externalAnimationDetected
+        state.renderConflict
     ) {
         return ANIMATION_STRATEGIES.MINIMAL;
     }
@@ -460,7 +343,11 @@ function calculateStrategy(player) {
 }
 
 function addConflict(state, conflict) {
-    if (!Object.values(CONFLICT_TYPES).includes(conflict)) {
+    if (
+        !Object.values(CONFLICT_TYPES).includes(
+            conflict
+        )
+    ) {
         return;
     }
 
@@ -476,8 +363,7 @@ function updateConflictState(player) {
         return null;
     }
 
-    const detected =
-        detectPlayerConflictState(player);
+    const detected = detectConflicts(player);
 
     state.externalAnimationDetected =
         detected.externalAnimationDetected;
@@ -521,20 +407,21 @@ function updateConflictState(player) {
         );
     }
 
+    state.strategy =
+        calculateStrategy(
+            player,
+            state
+        );
+
     try {
-        if (state.conflicts.length > 0) {
-            updatePlayerCompatibility(
-                player,
-                {
-                    conflicts: [...state.conflicts]
-                }
-            );
-        }
+        updatePlayerCompatibility(
+            player,
+            {
+                conflicts: [...state.conflicts]
+            }
+        );
     } catch {
     }
-
-    state.strategy =
-        calculateStrategy(player);
 
     state.lastUpdate = Date.now();
     state.revision = revision;
@@ -542,67 +429,103 @@ function updateConflictState(player) {
     return state;
 }
 
-function setCurrentState(player, nextState) {
-    const state = getPlayerState(player);
+function registerDefaultAnimations() {
+    animationProfiles.clear();
 
-    if (!state) {
-        return false;
-    }
+    animationProfiles.set(
+        "vantage:body",
+        {
+            identifier: "vantage:body",
+            name: "Vantage Body",
+            enabled: true,
+            priority: 100,
+            layer: ANIMATION_LAYERS.BODY,
+            external: false,
+            customModel: false,
+            controller: false,
+            renderController: false,
+            states: Object.values(ANIMATION_STATES),
+            conflicts: []
+        }
+    );
 
-    const normalized =
-        normalizeState(nextState);
-
-    if (
-        normalized === ANIMATION_STATES.UNKNOWN &&
-        nextState !== ANIMATION_STATES.UNKNOWN
-    ) {
-        return false;
-    }
-
-    if (state.state !== normalized) {
-        state.previousState = state.state;
-        state.state = normalized;
-    }
-
-    state.lastUpdate = Date.now();
-
-    return true;
+    animationProfiles.set(
+        "vantage:pose",
+        {
+            identifier: "vantage:pose",
+            name: "Vantage Pose",
+            enabled: true,
+            priority: 90,
+            layer: ANIMATION_LAYERS.POSE,
+            external: false,
+            customModel: false,
+            controller: false,
+            renderController: false,
+            states: Object.values(ANIMATION_STATES),
+            conflicts: []
+        }
+    );
 }
 
-function getCurrentState(player) {
-    const state =
-        getPlayerState(player);
+function normalizeProfile(identifier, profile = {}) {
+    const id = string(identifier);
 
-    return state?.state ??
-        ANIMATION_STATES.UNKNOWN;
+    if (!id) {
+        return null;
+    }
+
+    const source =
+        profile &&
+            typeof profile === "object"
+            ? profile
+            : {};
+
+    return {
+        identifier: id,
+        name: string(source.name, id),
+        enabled: boolean(
+            source.enabled,
+            true
+        ),
+        priority: number(
+            source.priority,
+            0
+        ),
+        layer: layerValue(
+            source.layer
+        ),
+        external: boolean(
+            source.external,
+            false
+        ),
+        customModel: boolean(
+            source.customModel,
+            false
+        ),
+        controller: boolean(
+            source.controller,
+            false
+        ),
+        renderController: boolean(
+            source.renderController,
+            false
+        ),
+        states: array(
+            source.states
+        ),
+        conflicts: array(
+            source.conflicts
+        )
+    };
 }
 
 function canPlayAnimation(
     player,
-    animationIdentifier
+    identifier
 ) {
-    const state =
-        getPlayerState(player);
+    const state = getPlayerState(player);
 
     if (!state) {
-        return false;
-    }
-
-    const animation =
-        getAnimationProfile(
-            animationIdentifier
-        );
-
-    if (!animation) {
-        return (
-            state.strategy !==
-            ANIMATION_STRATEGIES.DISABLED &&
-            state.strategy !==
-            ANIMATION_STRATEGIES.VANILLA
-        );
-    }
-
-    if (!animation.enabled) {
         return false;
     }
 
@@ -610,6 +533,13 @@ function canPlayAnimation(
         state.strategy ===
         ANIMATION_STRATEGIES.DISABLED
     ) {
+        return false;
+    }
+
+    const animation =
+        animationProfiles.get(identifier);
+
+    if (!animation || !animation.enabled) {
         return false;
     }
 
@@ -649,10 +579,8 @@ function canPlayAnimation(
     }
 
     if (
-        animation.states.length > 0 &&
-        !animation.states.includes(
-            state.state
-        )
+        animation.states.length &&
+        !animation.states.includes(state.state)
     ) {
         return false;
     }
@@ -661,169 +589,48 @@ function canPlayAnimation(
         state.strategy ===
         ANIMATION_STRATEGIES.MINIMAL
     ) {
-        if (
-            animation.layer ===
-            ANIMATION_LAYERS.BASE ||
-            animation.layer ===
-            ANIMATION_LAYERS.MOVEMENT ||
-            animation.layer ===
-            ANIMATION_LAYERS.POSE
-        ) {
-            return false;
-        }
+        return animation.layer ===
+            ANIMATION_LAYERS.EXTERNAL;
     }
 
     return true;
 }
 
-function shouldApplyLayer(player, layer) {
-    const state =
-        getPlayerState(player);
+function rebuild(player) {
+    const state = getPlayerState(player);
 
     if (!state) {
         return false;
     }
 
-    if (
-        !Object.values(
-            ANIMATION_LAYERS
-        ).includes(layer)
-    ) {
-        return false;
-    }
+    state.activeLayers = [];
 
     if (
         state.strategy ===
-        ANIMATION_STRATEGIES.DISABLED
+        ANIMATION_STRATEGIES.VANTAGE
     ) {
-        return false;
-    }
-
-    if (
-        state.strategy ===
-        ANIMATION_STRATEGIES.VANILLA
-    ) {
-        return false;
-    }
-
-    if (
+        state.activeLayers = [
+            ANIMATION_LAYERS.BODY,
+            ANIMATION_LAYERS.POSE
+        ];
+    } else if (
         state.strategy ===
         ANIMATION_STRATEGIES.MINIMAL
     ) {
-        return (
-            layer === ANIMATION_LAYERS.CAMERA ||
-            layer === ANIMATION_LAYERS.OVERLAY
-        );
+        state.activeLayers = [
+            ANIMATION_LAYERS.EXTERNAL
+        ];
     }
 
-    return true;
-}
-
-function registerAnimationInternal(
-    identifier,
-    profile = {},
-    shouldBump = true
-) {
-    const normalized =
-        normalizeAnimationProfile(
-            identifier,
-            profile
-        );
-
-    if (!normalized) {
-        return false;
-    }
-
-    animationProfiles.set(
-        normalized.identifier,
-        normalized
-    );
-
-    if (shouldBump) {
-        bumpRevision();
-    }
-
-    return true;
-}
-
-function registerControllerInternal(
-    identifier,
-    profile = {},
-    shouldBump = true
-) {
-    const id =
-        normalizeString(identifier);
-
-    if (!id) {
-        return false;
-    }
-
-    const source =
-        profile &&
-            typeof profile === "object"
-            ? profile
-            : {};
-
-    registeredControllers.set(
-        id,
-        {
-            identifier: id,
-            enabled: normalizeBoolean(
-                source.enabled,
-                true
-            ),
-            priority: normalizeNumber(
-                source.priority,
-                0
-            ),
-            conflicts: normalizeArray(
-                source.conflicts
-            ),
-            metadata: clone(
-                source.metadata ?? {}
-            )
-        }
-    );
-
-    if (shouldBump) {
-        bumpRevision();
-    }
-
-    return true;
-}
-
-function sortAnimations(animations) {
-    return [...animations].sort(
+    const animations = [
+        ...animationProfiles.values()
+    ].sort(
         (a, b) =>
             b.priority - a.priority ||
             a.identifier.localeCompare(
                 b.identifier
             )
     );
-}
-
-function rebuildPlayerAnimationLists(player) {
-    const state =
-        getPlayerState(player);
-
-    if (!state) {
-        return false;
-    }
-
-    state.activeLayers = Object.values(
-        ANIMATION_LAYERS
-    ).filter(
-        layer =>
-            shouldApplyLayer(
-                player,
-                layer
-            )
-    );
-
-    const animations =
-        sortAnimations(
-            animationProfiles.values()
-        );
 
     state.activeAnimations = [];
     state.blockedAnimations = [];
@@ -845,6 +652,8 @@ function rebuildPlayerAnimationLists(player) {
         }
     }
 
+    state.revision = revision;
+
     return true;
 }
 
@@ -853,56 +662,10 @@ export function initialize() {
         return getSnapshot();
     }
 
-    registerAnimationInternal(
-        "vantage:camera",
-        {
-            name: "Vantage Camera Animation",
-            layer: ANIMATION_LAYERS.CAMERA,
-            priority: 100,
-            states: Object.values(
-                ANIMATION_STATES
-            )
-        },
-        false
-    );
-
-    registerAnimationInternal(
-        "vantage:body",
-        {
-            name: "Vantage Body Animation",
-            layer: ANIMATION_LAYERS.MOVEMENT,
-            priority: 50,
-            states: Object.values(
-                ANIMATION_STATES
-            )
-        },
-        false
-    );
-
-    registerAnimationInternal(
-        "vantage:pose",
-        {
-            name: "Vantage Pose Animation",
-            layer: ANIMATION_LAYERS.POSE,
-            priority: 40,
-            states: Object.values(
-                ANIMATION_STATES
-            )
-        },
-        false
-    );
-
-    registerControllerInternal(
-        "vantage:first_person",
-        {
-            enabled: true,
-            priority: 100
-        },
-        false
-    );
+    registerDefaultAnimations();
 
     initialized = true;
-    bumpRevision();
+    revision++;
 
     return getSnapshot();
 }
@@ -911,33 +674,48 @@ export function registerAnimation(
     identifier,
     profile = {}
 ) {
-    return registerAnimationInternal(
-        identifier,
-        profile
+    const normalized =
+        normalizeProfile(
+            identifier,
+            profile
+        );
+
+    if (!normalized) {
+        return false;
+    }
+
+    animationProfiles.set(
+        normalized.identifier,
+        normalized
     );
+
+    revision++;
+
+    return true;
 }
 
 export function unregisterAnimation(identifier) {
-    const id =
-        normalizeString(identifier);
+    const id = string(identifier);
 
     if (!id) {
         return false;
     }
 
-    const result =
+    const removed =
         animationProfiles.delete(id);
 
-    if (result) {
-        bumpRevision();
+    if (removed) {
+        revision++;
     }
 
-    return result;
+    return removed;
 }
 
 export function getAnimation(identifier) {
     const animation =
-        getAnimationProfile(identifier);
+        animationProfiles.get(
+            string(identifier)
+        );
 
     return animation
         ? clone(animation)
@@ -946,104 +724,63 @@ export function getAnimation(identifier) {
 
 export function getAnimations() {
     return clone(
-        sortAnimations(
-            animationProfiles.values()
+        [...animationProfiles.values()].sort(
+            (a, b) =>
+                b.priority - a.priority ||
+                a.identifier.localeCompare(
+                    b.identifier
+                )
         )
-    );
-}
-
-export function registerController(
-    identifier,
-    profile = {}
-) {
-    return registerControllerInternal(
-        identifier,
-        profile
-    );
-}
-
-export function unregisterController(identifier) {
-    const id =
-        normalizeString(identifier);
-
-    if (!id) {
-        return false;
-    }
-
-    const result =
-        registeredControllers.delete(id);
-
-    if (result) {
-        bumpRevision();
-    }
-
-    return result;
-}
-
-export function getController(identifier) {
-    const controller =
-        registeredControllers.get(
-            normalizeString(identifier)
-        );
-
-    return controller
-        ? clone(controller)
-        : null;
-}
-
-export function getControllers() {
-    return clone(
-        [...registeredControllers.values()]
-            .sort(
-                (a, b) =>
-                    b.priority - a.priority ||
-                    a.identifier.localeCompare(
-                        b.identifier
-                    )
-            )
     );
 }
 
 export function setPlayerAnimationState(
     player,
-    state
+    nextState
 ) {
     if (!isValidPlayer(player)) {
         return false;
     }
 
-    if (!setCurrentState(player, state)) {
+    const state = getPlayerState(player);
+
+    if (!state) {
         return false;
     }
 
+    const normalized =
+        stateValue(nextState);
+
+    if (
+        normalized === ANIMATION_STATES.UNKNOWN &&
+        nextState !== ANIMATION_STATES.UNKNOWN
+    ) {
+        return false;
+    }
+
+    if (state.state !== normalized) {
+        state.previousState = state.state;
+        state.state = normalized;
+    }
+
     updateConflictState(player);
-    rebuildPlayerAnimationLists(player);
+    rebuild(player);
 
     return true;
 }
 
 export function getPlayerAnimationState(player) {
-    return getCurrentState(player);
+    return (
+        getPlayerState(player)?.state ??
+        ANIMATION_STATES.UNKNOWN
+    );
 }
 
 export function getPreviousAnimationState(player) {
-    const state =
-        getPlayerState(player);
-
-    return state?.previousState ??
-        ANIMATION_STATES.UNKNOWN;
-}
-
-export function getPlayerAnimationStrategy(player) {
-    if (!isValidPlayer(player)) {
-        return ANIMATION_STRATEGIES.VANILLA;
-    }
-
-    const state =
-        updateConflictState(player);
-
-    return state?.strategy ??
-        ANIMATION_STRATEGIES.VANILLA;
+    return (
+        getPlayerState(player)?.previousState ??
+        ANIMATION_STATES.UNKNOWN
+    );
 }
 
 export function updatePlayerAnimations(
@@ -1056,19 +793,33 @@ export function updatePlayerAnimations(
 
     if (nextState !== null) {
         if (
-            !setCurrentState(
+            !setPlayerAnimationState(
                 player,
                 nextState
             )
         ) {
             return false;
         }
+
+        return true;
     }
 
     updateConflictState(player);
 
-    return rebuildPlayerAnimationLists(
-        player
+    return rebuild(player);
+}
+
+export function getPlayerAnimationStrategy(player) {
+    if (!isValidPlayer(player)) {
+        return ANIMATION_STRATEGIES.VANILLA;
+    }
+
+    const state =
+        updateConflictState(player);
+
+    return (
+        state?.strategy ??
+        ANIMATION_STRATEGIES.VANILLA
     );
 }
 
@@ -1084,7 +835,7 @@ export function canPlay(
 
     return canPlayAnimation(
         player,
-        animationIdentifier
+        string(animationIdentifier)
     );
 }
 
@@ -1104,12 +855,14 @@ export function canApplyLayer(
         return false;
     }
 
-    updateConflictState(player);
+    const state =
+        updateConflictState(player);
 
-    return shouldApplyLayer(
-        player,
-        layer
-    );
+    if (!state) {
+        return false;
+    }
+
+    return state.activeLayers.includes(layer);
 }
 
 export function isAnimationEnabled(player) {
@@ -1221,14 +974,15 @@ export function getAnimationState(player) {
     const state =
         getPlayerState(player);
 
-    if (!state) {
-        return null;
-    }
-
-    return clone(state);
+    return state
+        ? clone(state)
+        : null;
 }
 
-export function isPoseSupported(player, state) {
+export function isPoseSupported(
+    player,
+    pose
+) {
     if (!isValidPlayer(player)) {
         return false;
     }
@@ -1236,24 +990,27 @@ export function isPoseSupported(player, state) {
     if (
         !Object.values(
             ANIMATION_STATES
-        ).includes(state)
+        ).includes(pose)
     ) {
         return false;
     }
 
-    return getPoseEnabled(state);
+    return poseEnabled(pose);
 }
 
-export function shouldAnimatePose(player, state) {
+export function shouldAnimatePose(
+    player,
+    pose
+) {
     if (!isValidPlayer(player)) {
         return false;
     }
 
-    if (!getConfiguredAnimationEnabled()) {
+    if (!animationsEnabled()) {
         return false;
     }
 
-    if (!getPoseEnabled(state)) {
+    if (!poseEnabled(pose)) {
         return false;
     }
 
@@ -1262,9 +1019,7 @@ export function shouldAnimatePose(player, state) {
 
     return (
         strategy ===
-        ANIMATION_STRATEGIES.VANTAGE ||
-        strategy ===
-        ANIMATION_STRATEGIES.MINIMAL
+        ANIMATION_STRATEGIES.VANTAGE
     );
 }
 
@@ -1276,8 +1031,7 @@ export function reportExternalAnimation(
         return false;
     }
 
-    const state =
-        getPlayerState(player);
+    const state = getPlayerState(player);
 
     if (!state) {
         return false;
@@ -1290,22 +1044,11 @@ export function reportExternalAnimation(
         CONFLICT_TYPES.CUSTOM_ANIMATION
     );
 
-    try {
-        updatePlayerCompatibility(
-            player,
-            {
-                conflicts: [
-                    ...state.conflicts
-                ]
-            }
-        );
-    } catch {
-    }
-
     if (identifier) {
         registerAnimation(
             identifier,
             {
+                enabled: true,
                 external: true,
                 layer: ANIMATION_LAYERS.EXTERNAL,
                 priority: 10
@@ -1313,12 +1056,8 @@ export function reportExternalAnimation(
         );
     }
 
-    state.strategy =
-        calculateStrategy(player);
-
-    state.lastUpdate = Date.now();
-
-    bumpRevision();
+    updateConflictState(player);
+    rebuild(player);
 
     return true;
 }
@@ -1331,8 +1070,7 @@ export function reportCustomPlayerModel(
         return false;
     }
 
-    const state =
-        getPlayerState(player);
+    const state = getPlayerState(player);
 
     if (!state) {
         return false;
@@ -1345,22 +1083,11 @@ export function reportCustomPlayerModel(
         CONFLICT_TYPES.CUSTOM_PLAYER_MODEL
     );
 
-    try {
-        updatePlayerCompatibility(
-            player,
-            {
-                conflicts: [
-                    ...state.conflicts
-                ]
-            }
-        );
-    } catch {
-    }
-
     if (identifier) {
         registerAnimation(
             identifier,
             {
+                enabled: true,
                 customModel: true,
                 layer: ANIMATION_LAYERS.EXTERNAL,
                 priority: 10
@@ -1368,12 +1095,8 @@ export function reportCustomPlayerModel(
         );
     }
 
-    state.strategy =
-        calculateStrategy(player);
-
-    state.lastUpdate = Date.now();
-
-    bumpRevision();
+    updateConflictState(player);
+    rebuild(player);
 
     return true;
 }
@@ -1386,8 +1109,7 @@ export function reportControllerConflict(
         return false;
     }
 
-    const state =
-        getPlayerState(player);
+    const state = getPlayerState(player);
 
     if (!state) {
         return false;
@@ -1400,36 +1122,20 @@ export function reportControllerConflict(
         CONFLICT_TYPES.EXTERNAL_CONTROLLER
     );
 
-    try {
-        updatePlayerCompatibility(
-            player,
-            {
-                conflicts: [
-                    ...state.conflicts
-                ]
-            }
-        );
-    } catch {
-    }
-
     if (identifier) {
-        registerController(
+        registerAnimation(
             identifier,
             {
                 enabled: true,
-                conflicts: [
-                    CONFLICT_TYPES.EXTERNAL_CONTROLLER
-                ]
+                controller: true,
+                layer: ANIMATION_LAYERS.EXTERNAL,
+                priority: 10
             }
         );
     }
 
-    state.strategy =
-        calculateStrategy(player);
-
-    state.lastUpdate = Date.now();
-
-    bumpRevision();
+    updateConflictState(player);
+    rebuild(player);
 
     return true;
 }
@@ -1442,8 +1148,7 @@ export function reportRenderControllerConflict(
         return false;
     }
 
-    const state =
-        getPlayerState(player);
+    const state = getPlayerState(player);
 
     if (!state) {
         return false;
@@ -1456,36 +1161,20 @@ export function reportRenderControllerConflict(
         CONFLICT_TYPES.EXTERNAL_RENDER_CONTROLLER
     );
 
-    try {
-        updatePlayerCompatibility(
-            player,
-            {
-                conflicts: [
-                    ...state.conflicts
-                ]
-            }
-        );
-    } catch {
-    }
-
     if (identifier) {
-        registerController(
+        registerAnimation(
             identifier,
             {
                 enabled: true,
-                conflicts: [
-                    CONFLICT_TYPES.EXTERNAL_RENDER_CONTROLLER
-                ]
+                renderController: true,
+                layer: ANIMATION_LAYERS.EXTERNAL,
+                priority: 10
             }
         );
     }
 
-    state.strategy =
-        calculateStrategy(player);
-
-    state.lastUpdate = Date.now();
-
-    bumpRevision();
+    updateConflictState(player);
+    rebuild(player);
 
     return true;
 }
@@ -1495,8 +1184,7 @@ export function clearPlayerConflicts(player) {
         return false;
     }
 
-    const state =
-        getPlayerState(player);
+    const state = getPlayerState(player);
 
     if (!state) {
         return false;
@@ -1508,12 +1196,8 @@ export function clearPlayerConflicts(player) {
     state.renderConflict = false;
     state.conflicts = [];
 
-    state.strategy =
-        calculateStrategy(player);
-
-    state.lastUpdate = Date.now();
-
-    bumpRevision();
+    updateConflictState(player);
+    rebuild(player);
 
     return true;
 }
@@ -1528,16 +1212,12 @@ export function resetPlayer(player) {
 
 export function resetAll() {
     const hadState =
-        animationProfiles.size > 0 ||
-        registeredControllers.size > 0 ||
-        initialized;
+        initialized ||
+        animationProfiles.size > 0;
 
     animationProfiles.clear();
-    registeredControllers.clear();
-
     initialized = false;
-
-    bumpRevision();
+    revision++;
 
     initialize();
 
@@ -1597,7 +1277,6 @@ export function getSnapshot() {
             CONFLICT_POLICIES
         ),
         animations: getAnimations(),
-        controllers: getControllers(),
         compatibilityStatus
     };
 }

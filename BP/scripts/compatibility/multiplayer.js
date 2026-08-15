@@ -2,7 +2,6 @@ import { system, world } from "@minecraft/server";
 
 import {
     getCompatibilityStatus,
-    getCompatibilitySnapshot,
     getPlayerCompatibility,
     updatePlayerCompatibility,
     clearPlayer,
@@ -24,17 +23,14 @@ import {
 } from "../camera/camera.js";
 
 const MULTIPLAYER_MODES = Object.freeze({
-    SHARED: "shared",
     INDEPENDENT: "independent",
     SERVER_SAFE: "server_safe"
 });
 
 const PLAYER_STATUS = Object.freeze({
-    UNKNOWN: "unknown",
     ACTIVE: "active",
-    INACTIVE: "inactive",
-    INVALID: "invalid",
-    LIMITED: "limited"
+    LIMITED: "limited",
+    INVALID: "invalid"
 });
 
 const SYNC_STATES = Object.freeze({
@@ -60,22 +56,18 @@ const CONTROL_MODES = Object.freeze({
 const DEFAULTS = Object.freeze({
     synchronizationInterval: 2,
     compatibilityInterval: 10,
-    cleanupInterval: 40,
-    maximumErrors: 10,
-    sessionPrefix: "vantage"
+    cleanupInterval: 40
 });
 
 const playerRecords = new WeakMap();
 const playerIds = new Map();
-const sessions = new Map();
 
 let initialized = false;
 let tickHandle;
 let revision = 0;
-let lastSweepTick = -1;
+let lastSynchronizationTick = -1;
 let lastCompatibilityTick = -1;
 let lastCleanupTick = -1;
-let sessionId;
 
 function clone(value) {
     if (value === undefined) {
@@ -95,12 +87,6 @@ function normalizeString(value, fallback = "") {
         : fallback;
 }
 
-function normalizeNumber(value, fallback = 0) {
-    return typeof value === "number" && Number.isFinite(value)
-        ? value
-        : fallback;
-}
-
 function normalizeBoolean(value, fallback = false) {
     return typeof value === "boolean"
         ? value
@@ -108,19 +94,19 @@ function normalizeBoolean(value, fallback = false) {
 }
 
 function normalizeArray(value) {
-    return Array.isArray(value)
-        ? [...new Set(
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return [
+        ...new Set(
             value.filter(
                 item =>
                     typeof item === "string" &&
                     item.length > 0
             )
-        )]
-        : [];
-}
-
-function bumpRevision() {
-    revision++;
+        )
+    ];
 }
 
 function getCurrentTick() {
@@ -131,25 +117,6 @@ function getCurrentTick() {
     } catch {
         return Date.now();
     }
-}
-
-function getNow() {
-    return Date.now();
-}
-
-function getPlayerId(player) {
-    if (!player) {
-        return null;
-    }
-
-    try {
-        if (typeof player.id === "string" && player.id.length > 0) {
-            return player.id;
-        }
-    } catch {
-    }
-
-    return null;
 }
 
 function isValidPlayer(player) {
@@ -167,50 +134,23 @@ function isValidPlayer(player) {
     }
 }
 
+function getPlayerId(player) {
+    if (!isValidPlayer(player)) {
+        return null;
+    }
+
+    try {
+        return normalizeString(player.id, null);
+    } catch {
+        return null;
+    }
+}
+
 function getPlayerName(player) {
     try {
-        return normalizeString(
-            player.name,
-            "Player"
-        );
+        return normalizeString(player.name, "Player");
     } catch {
         return "Player";
-    }
-}
-
-function getPlayerDimension(player) {
-    if (!isValidPlayer(player)) {
-        return "";
-    }
-
-    try {
-        return normalizeString(
-            player.dimension?.id
-        );
-    } catch {
-        return "";
-    }
-}
-
-function getPlayerLocation(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    try {
-        const location = player.location;
-
-        if (!location) {
-            return null;
-        }
-
-        return {
-            x: normalizeNumber(location.x),
-            y: normalizeNumber(location.y),
-            z: normalizeNumber(location.z)
-        };
-    } catch {
-        return null;
     }
 }
 
@@ -220,14 +160,15 @@ function getPlayerControlMode(player) {
     }
 
     try {
-        const inputMode =
+        const input =
             player.inputInfo?.lastInputModeUsed;
 
-        if (inputMode === undefined || inputMode === null) {
+        if (input === undefined || input === null) {
             return CONTROL_MODES.UNKNOWN;
         }
 
-        const value = String(inputMode).toLowerCase();
+        const value =
+            String(input).toLowerCase();
 
         if (
             value.includes("touch") ||
@@ -250,11 +191,10 @@ function getPlayerControlMode(player) {
         ) {
             return CONTROL_MODES.KEYBOARD_MOUSE;
         }
-
-        return CONTROL_MODES.UNKNOWN;
     } catch {
-        return CONTROL_MODES.UNKNOWN;
     }
+
+    return CONTROL_MODES.UNKNOWN;
 }
 
 function getPlayerCameraMode(player) {
@@ -263,12 +203,9 @@ function getPlayerCameraMode(player) {
     }
 
     try {
-        const cameraState = getCameraState(player);
+        const state = getCameraState(player);
 
-        if (
-            !cameraState ||
-            !cameraState.active
-        ) {
+        if (!state?.active) {
             return CAMERA_MODES.UNKNOWN;
         }
 
@@ -286,6 +223,14 @@ function getPlayerCameraMode(player) {
     return CAMERA_MODES.UNKNOWN;
 }
 
+function getCompatibility(player) {
+    try {
+        return getPlayerCompatibility(player);
+    } catch {
+        return null;
+    }
+}
+
 function getPlayerRecord(player) {
     if (!isValidPlayer(player)) {
         return null;
@@ -294,7 +239,6 @@ function getPlayerRecord(player) {
     let record = playerRecords.get(player);
 
     if (!record) {
-        const now = getNow();
         const id = getPlayerId(player);
 
         record = {
@@ -304,20 +248,14 @@ function getPlayerRecord(player) {
             syncState: SYNC_STATES.UNSYNCED,
             cameraMode: getPlayerCameraMode(player),
             controlMode: getPlayerControlMode(player),
-            animationState: getPlayerAnimationState(player),
-            animationStrategy: getPlayerAnimationStrategy(player),
+            animationState:
+                getPlayerAnimationState(player),
+            animationStrategy:
+                getPlayerAnimationStrategy(player),
             enabled: true,
-            joinedAt: now,
-            lastSeen: now,
             lastSync: 0,
-            lastTick: -1,
-            lastDimension: getPlayerDimension(player),
-            lastLocation: getPlayerLocation(player),
-            errors: 0,
-            consecutiveErrors: 0,
             compatibilityRevision: -1,
-            animationRevision: -1,
-            revision
+            animationRevision: -1
         };
 
         playerRecords.set(player, record);
@@ -330,109 +268,21 @@ function getPlayerRecord(player) {
     return record;
 }
 
-function enumeratePlayers() {
+function getPlayers() {
     try {
-        if (typeof world.getPlayers === "function") {
-            return world.getPlayers();
-        }
+        return world.getPlayers();
     } catch {
-    }
-
-    try {
-        if (typeof world.getAllPlayers === "function") {
-            return world.getAllPlayers();
-        }
-    } catch {
-    }
-
-    return [];
-}
-
-function createSessionId() {
-    const timestamp = getNow().toString(36);
-
-    let random = "";
-
-    try {
-        random = Math.random()
-            .toString(36)
-            .slice(2, 10);
-    } catch {
-        random = "local";
-    }
-
-    return `${DEFAULTS.sessionPrefix}:${timestamp}:${random}`;
-}
-
-function getSessionId() {
-    if (sessionId) {
-        return sessionId;
-    }
-
-    sessionId = createSessionId();
-
-    return sessionId;
-}
-
-function getOrCreateSession() {
-    const id = getSessionId();
-
-    let session = sessions.get(id);
-
-    if (!session) {
-        session = {
-            id,
-            createdAt: getNow(),
-            lastUpdate: getNow(),
-            playerCount: 0,
-            activePlayerCount: 0,
-            active: true,
-            syncState: SYNC_STATES.UNSYNCED,
-            revision
-        };
-
-        sessions.set(id, session);
-    }
-
-    return session;
-}
-
-function getCompatibilityState(player) {
-    try {
-        return getPlayerCompatibility(player);
-    } catch {
-        return null;
+        return [];
     }
 }
 
-function getCompatibilityStatusForPlayer(player) {
-    const compatibility =
-        getCompatibilityState(player);
-
-    return compatibility?.status ?? "unknown";
-}
-
-function getPlayerStatusFromCompatibility(player) {
-    const status =
-        getCompatibilityStatusForPlayer(player);
-
-    if (status === "incompatible") {
-        return PLAYER_STATUS.LIMITED;
-    }
-
-    if (status === "limited") {
-        return PLAYER_STATUS.LIMITED;
-    }
-
-    return PLAYER_STATUS.ACTIVE;
-}
-
-function synchronizeCompatibility(player, record, force = false) {
+function updateCompatibility(player, record, force = false) {
     const tick = getCurrentTick();
+    const packRevision = getPackRevision();
 
     if (
         !force &&
-        record.compatibilityRevision === getPackRevision() &&
+        record.compatibilityRevision === packRevision &&
         tick - record.lastSync <
         DEFAULTS.compatibilityInterval
     ) {
@@ -441,40 +291,67 @@ function synchronizeCompatibility(player, record, force = false) {
 
     try {
         const compatibility =
-            getCompatibilityState(player);
+            getCompatibility(player);
 
         if (compatibility) {
             updatePlayerCompatibility(
                 player,
                 {
-                    status: compatibility.status,
-                    capabilities: normalizeArray(
-                        compatibility.capabilities
-                    ),
-                    conflicts: normalizeArray(
-                        compatibility.conflicts
-                    )
+                    status:
+                        compatibility.status,
+                    capabilities:
+                        normalizeArray(
+                            compatibility.capabilities
+                        ),
+                    conflicts:
+                        normalizeArray(
+                            compatibility.conflicts
+                        )
                 }
             );
+
+            if (
+                compatibility.status ===
+                "incompatible"
+            ) {
+                record.status =
+                    PLAYER_STATUS.LIMITED;
+                record.syncState =
+                    SYNC_STATES.DEGRADED;
+            } else if (
+                compatibility.status ===
+                "limited"
+            ) {
+                record.status =
+                    PLAYER_STATUS.LIMITED;
+                record.syncState =
+                    SYNC_STATES.DEGRADED;
+            } else {
+                record.status =
+                    PLAYER_STATUS.ACTIVE;
+                record.syncState =
+                    SYNC_STATES.SYNCED;
+            }
         }
 
         record.compatibilityRevision =
-            getPackRevision();
+            packRevision;
     } catch {
-        record.errors++;
-        record.consecutiveErrors++;
+        record.status =
+            PLAYER_STATUS.LIMITED;
+        record.syncState =
+            SYNC_STATES.DEGRADED;
     }
 }
 
-function synchronizeAnimations(player, record, force = false) {
-    const packRevision =
-        getPackRevision();
+function updateAnimations(player, record, force = false) {
+    const tick = getCurrentTick();
+    const packRevision = getPackRevision();
 
     if (
         !force &&
         record.animationRevision === packRevision &&
-        record.lastTick >= 0 &&
-        getCurrentTick() - record.lastTick <
+        tick - record.lastSync <
         DEFAULTS.compatibilityInterval
     ) {
         return;
@@ -492,14 +369,13 @@ function synchronizeAnimations(player, record, force = false) {
         record.animationRevision =
             packRevision;
     } catch {
-        record.errors++;
-        record.consecutiveErrors++;
+        record.syncState =
+            SYNC_STATES.DEGRADED;
     }
 }
 
 function synchronizePlayer(
     player,
-    tick,
     options = {}
 ) {
     if (!isValidPlayer(player)) {
@@ -513,92 +389,30 @@ function synchronizePlayer(
         return false;
     }
 
-    const now = getNow();
-
     try {
-        record.status =
-            PLAYER_STATUS.ACTIVE;
-
-        record.lastSeen = now;
-        record.lastTick = tick;
-
-        const dimension =
-            getPlayerDimension(player);
-
-        if (
-            dimension !==
-            record.lastDimension
-        ) {
-            record.lastDimension =
-                dimension;
-
-            record.syncState =
-                SYNC_STATES.SYNCING;
-        }
-
-        record.lastLocation =
-            getPlayerLocation(player);
+        record.cameraMode =
+            getPlayerCameraMode(player);
 
         record.controlMode =
             getPlayerControlMode(player);
 
-        record.cameraMode =
-            getPlayerCameraMode(player);
-
-        if (options.updateCompatibility) {
-            synchronizeCompatibility(
+        if (options.compatibility) {
+            updateCompatibility(
                 player,
                 record,
                 options.force
             );
         }
 
-        if (options.updateAnimations) {
-            synchronizeAnimations(
+        if (options.animations) {
+            updateAnimations(
                 player,
                 record,
                 options.force
             );
-        } else {
-            record.animationState =
-                getPlayerAnimationState(player);
-
-            record.animationStrategy =
-                getPlayerAnimationStrategy(player);
         }
 
-        const compatibility =
-            getCompatibilityState(player);
-
-        const compatibilityStatus =
-            compatibility?.status ??
-            "unknown";
-
-        record.status =
-            getPlayerStatusFromCompatibility(
-                player
-            );
-
-        if (
-            compatibilityStatus ===
-            "incompatible"
-        ) {
-            record.syncState =
-                SYNC_STATES.DEGRADED;
-        } else if (
-            compatibilityStatus ===
-            "limited"
-        ) {
-            record.syncState =
-                SYNC_STATES.DEGRADED;
-        } else {
-            record.syncState =
-                SYNC_STATES.SYNCED;
-        }
-
-        record.lastSync = now;
-        record.consecutiveErrors = 0;
-        record.revision = revision;
+        record.lastSync = Date.now();
 
         const id = getPlayerId(player);
 
@@ -609,40 +423,21 @@ function synchronizePlayer(
 
         return true;
     } catch {
-        record.errors++;
-        record.consecutiveErrors++;
-
         record.syncState =
             SYNC_STATES.DEGRADED;
-
-        if (
-            record.consecutiveErrors >=
-            DEFAULTS.maximumErrors
-        ) {
-            record.status =
-                PLAYER_STATUS.LIMITED;
-        }
 
         return false;
     }
 }
 
-function synchronizePlayers(
-    tick,
-    options = {}
-) {
-    const players =
-        enumeratePlayers();
-
-    const activePlayers = [];
+function synchronizePlayers(options = {}) {
+    const players = getPlayers();
     const activeIds = new Set();
 
     for (const player of players) {
         if (!isValidPlayer(player)) {
             continue;
         }
-
-        activePlayers.push(player);
 
         const id = getPlayerId(player);
 
@@ -652,7 +447,6 @@ function synchronizePlayers(
 
         synchronizePlayer(
             player,
-            tick,
             options
         );
     }
@@ -665,32 +459,39 @@ function synchronizePlayers(
         }
     }
 
-    const session =
-        getOrCreateSession();
+    lastSynchronizationTick =
+        getCurrentTick();
 
-    session.playerCount =
-        players.length;
-
-    session.activePlayerCount =
-        activePlayers.length;
-
-    session.lastUpdate =
-        getNow();
-
-    session.syncState =
-        activePlayers.length > 0
-            ? SYNC_STATES.SYNCED
-            : SYNC_STATES.UNSYNCED;
-
-    session.revision =
-        revision;
-
-    lastSweepTick = tick;
-
-    return activePlayers.length;
+    return players.length;
 }
 
-function scheduleSynchronization() {
+function removePlayerReference(player) {
+    if (!player) {
+        return false;
+    }
+
+    const id = getPlayerId(player);
+
+    if (id && playerIds.get(id) === player) {
+        playerIds.delete(id);
+    }
+
+    try {
+        clearPlayer(player);
+    } catch {
+    }
+
+    try {
+        resetPlayer(player);
+    } catch {
+    }
+
+    playerRecords.delete(player);
+
+    return true;
+}
+
+function startSynchronization() {
     if (tickHandle !== undefined) {
         return false;
     }
@@ -702,44 +503,39 @@ function scheduleSynchronization() {
                     getCurrentTick();
 
                 if (
-                    lastSweepTick === tick
+                    lastSynchronizationTick ===
+                    tick
                 ) {
                     return;
                 }
 
-                const shouldUpdateCompatibility =
+                const updateCompatibility =
                     lastCompatibilityTick < 0 ||
                     tick -
                     lastCompatibilityTick >=
                     DEFAULTS.compatibilityInterval;
 
-                const shouldCleanup =
+                const cleanup =
                     lastCleanupTick < 0 ||
                     tick -
                     lastCleanupTick >=
                     DEFAULTS.cleanupInterval;
 
-                synchronizePlayers(
-                    tick,
-                    {
-                        updateCompatibility:
-                            shouldUpdateCompatibility,
-                        updateAnimations:
-                            shouldUpdateCompatibility,
-                        cleanup:
-                            shouldCleanup,
-                        force: false
-                    }
-                );
+                synchronizePlayers({
+                    compatibility:
+                        updateCompatibility,
+                    animations:
+                        updateCompatibility,
+                    cleanup,
+                    force: false
+                });
 
-                if (shouldUpdateCompatibility) {
-                    lastCompatibilityTick =
-                        tick;
+                if (updateCompatibility) {
+                    lastCompatibilityTick = tick;
                 }
 
-                if (shouldCleanup) {
-                    lastCleanupTick =
-                        tick;
+                if (cleanup) {
+                    lastCleanupTick = tick;
                 }
             },
             DEFAULTS.synchronizationInterval
@@ -758,48 +554,11 @@ function stopSynchronization() {
     }
 
     try {
-        system.clearRun(
-            tickHandle
-        );
+        system.clearRun(tickHandle);
     } catch {
     }
 
     tickHandle = undefined;
-
-    return true;
-}
-
-function removePlayerReference(player) {
-    if (!player) {
-        return false;
-    }
-
-    const id =
-        getPlayerId(player);
-
-    if (id) {
-        const current =
-            playerIds.get(id);
-
-        if (current === player) {
-            playerIds.delete(id);
-        }
-    }
-
-    try {
-        clearPlayer(player);
-    } catch {
-    }
-
-    try {
-        resetPlayer(player);
-    } catch {
-    }
-
-    try {
-        playerRecords.delete(player);
-    } catch {
-    }
 
     return true;
 }
@@ -812,29 +571,20 @@ export function initialize() {
     initialized = true;
     revision++;
 
-    getOrCreateSession();
+    synchronizePlayers({
+        compatibility: true,
+        animations: true,
+        cleanup: true,
+        force: true
+    });
 
-    synchronizePlayers(
-        getCurrentTick(),
-        {
-            updateCompatibility: true,
-            updateAnimations: true,
-            cleanup: true,
-            force: true
-        }
-    );
-
-    scheduleSynchronization();
+    startSynchronization();
 
     return getSnapshot();
 }
 
 export function isInitialized() {
     return initialized;
-}
-
-export function getPlayers() {
-    return enumeratePlayers();
 }
 
 export function getPlayerById(id) {
@@ -855,11 +605,10 @@ export function getPlayerById(id) {
         return cached;
     }
 
-    for (const player of enumeratePlayers()) {
+    for (const player of getPlayers()) {
         if (
             isValidPlayer(player) &&
-            getPlayerId(player) ===
-            normalized
+            getPlayerId(player) === normalized
         ) {
             playerIds.set(
                 normalized,
@@ -880,30 +629,26 @@ export function hasPlayer(player) {
         return false;
     }
 
-    const id =
-        getPlayerId(player);
+    const id = getPlayerId(player);
 
-    if (!id) {
-        return false;
-    }
-
-    return playerIds.get(id) === player;
+    return Boolean(
+        id &&
+        playerIds.get(id) === player
+    );
 }
 
 export function getPlayerStatus(player) {
-    const record =
-        getPlayerRecord(player);
-
-    return record?.status ??
-        PLAYER_STATUS.INVALID;
+    return (
+        getPlayerRecord(player)?.status ??
+        PLAYER_STATUS.INVALID
+    );
 }
 
 export function getPlayerSyncState(player) {
-    const record =
-        getPlayerRecord(player);
-
-    return record?.syncState ??
-        SYNC_STATES.UNSYNCED;
+    return (
+        getPlayerRecord(player)?.syncState ??
+        SYNC_STATES.UNSYNCED
+    );
 }
 
 export function getPlayerRecordSnapshot(player) {
@@ -921,7 +666,7 @@ export function getPlayerCompatibilityState(player) {
     }
 
     return clone(
-        getPlayerCompatibility(player)
+        getCompatibility(player)
     );
 }
 
@@ -942,21 +687,16 @@ export function setPlayerEnabled(
             true
         );
 
-    record.lastSync =
-        getNow();
+    record.lastSync = Date.now();
 
-    bumpRevision();
+    revision++;
 
     return true;
 }
 
 export function isPlayerEnabled(player) {
-    const record =
-        getPlayerRecord(player);
-
     return Boolean(
-        record &&
-        record.enabled
+        getPlayerRecord(player)?.enabled
     );
 }
 
@@ -979,13 +719,10 @@ export function setPlayerCameraMode(
         return false;
     }
 
-    record.cameraMode =
-        mode;
+    record.cameraMode = mode;
+    record.lastSync = Date.now();
 
-    record.lastSync =
-        getNow();
-
-    bumpRevision();
+    revision++;
 
     return true;
 }
@@ -1015,13 +752,10 @@ export function setPlayerControlMode(
         return false;
     }
 
-    record.controlMode =
-        mode;
+    record.controlMode = mode;
+    record.lastSync = Date.now();
 
-    record.lastSync =
-        getNow();
-
-    bumpRevision();
+    revision++;
 
     return true;
 }
@@ -1029,11 +763,10 @@ export function setPlayerControlMode(
 export function getPlayerControlModeSafe(
     player
 ) {
-    const record =
-        getPlayerRecord(player);
-
-    return record?.controlMode ??
-        CONTROL_MODES.UNKNOWN;
+    return (
+        getPlayerRecord(player)?.controlMode ??
+        CONTROL_MODES.UNKNOWN
+    );
 }
 
 export function isPlayerInFirstPerson(player) {
@@ -1069,29 +802,20 @@ export function setPlayerSyncState(
         return false;
     }
 
-    record.syncState =
-        state;
+    record.syncState = state;
+    record.lastSync = Date.now();
 
-    record.lastSync =
-        getNow();
-
-    bumpRevision();
+    revision++;
 
     return true;
 }
 
-export function synchronizePlayerNow(
-    player
-) {
-    const tick =
-        getCurrentTick();
-
+export function synchronizePlayerNow(player) {
     return synchronizePlayer(
         player,
-        tick,
         {
-            updateCompatibility: true,
-            updateAnimations: true,
+            compatibility: true,
+            animations: true,
             cleanup: false,
             force: true
         }
@@ -1099,39 +823,27 @@ export function synchronizePlayerNow(
 }
 
 export function synchronizeNow() {
-    const tick =
-        getCurrentTick();
-
     const result =
-        synchronizePlayers(
-            tick,
-            {
-                updateCompatibility: true,
-                updateAnimations: true,
-                cleanup: true,
-                force: true
-            }
-        );
+        synchronizePlayers({
+            compatibility: true,
+            animations: true,
+            cleanup: true,
+            force: true
+        });
 
-    bumpRevision();
+    revision++;
 
     return result;
 }
 
 export function getPlayerCount() {
-    return enumeratePlayers().length;
+    return getPlayers().length;
 }
 
 export function getActivePlayerCount() {
-    let count = 0;
-
-    for (const player of enumeratePlayers()) {
-        if (isValidPlayer(player)) {
-            count++;
-        }
-    }
-
-    return count;
+    return getPlayers().filter(
+        isValidPlayer
+    ).length;
 }
 
 export function getPlayersInDimension(
@@ -1144,15 +856,23 @@ export function getPlayersInDimension(
         return [];
     }
 
-    return enumeratePlayers().filter(
-        player =>
-            isValidPlayer(player) &&
-            getPlayerDimension(player) === id
+    return getPlayers().filter(
+        player => {
+            if (!isValidPlayer(player)) {
+                return false;
+            }
+
+            try {
+                return player.dimension?.id === id;
+            } catch {
+                return false;
+            }
+        }
     );
 }
 
 export function getPlayersWithVantageEnabled() {
-    return enumeratePlayers().filter(
+    return getPlayers().filter(
         player =>
             isValidPlayer(player) &&
             isPlayerEnabled(player)
@@ -1160,7 +880,7 @@ export function getPlayersWithVantageEnabled() {
 }
 
 export function getPlayersUsingFirstPerson() {
-    return enumeratePlayers().filter(
+    return getPlayers().filter(
         player =>
             isValidPlayer(player) &&
             isPlayerInFirstPerson(player)
@@ -1168,7 +888,7 @@ export function getPlayersUsingFirstPerson() {
 }
 
 export function getPlayersUsingThirdPerson() {
-    return enumeratePlayers().filter(
+    return getPlayers().filter(
         player =>
             isValidPlayer(player) &&
             isPlayerInThirdPerson(player)
@@ -1176,7 +896,7 @@ export function getPlayersUsingThirdPerson() {
 }
 
 export function getPlayersWithAnimationSupport() {
-    return enumeratePlayers().filter(
+    return getPlayers().filter(
         player =>
             isValidPlayer(player) &&
             isAnimationEnabled(player)
@@ -1184,7 +904,7 @@ export function getPlayersWithAnimationSupport() {
 }
 
 export function getPlayersWithDegradedSync() {
-    return enumeratePlayers().filter(
+    return getPlayers().filter(
         player =>
             isValidPlayer(player) &&
             getPlayerSyncState(player) ===
@@ -1193,21 +913,17 @@ export function getPlayersWithDegradedSync() {
 }
 
 export function getPlayersWithCompatibilityConflicts() {
-    return enumeratePlayers().filter(
+    return getPlayers().filter(
         player => {
             if (!isValidPlayer(player)) {
                 return false;
             }
 
             const compatibility =
-                getPlayerCompatibility(player);
+                getCompatibility(player);
 
             return Boolean(
-                compatibility &&
-                Array.isArray(
-                    compatibility.conflicts
-                ) &&
-                compatibility.conflicts.length > 0
+                compatibility?.conflicts?.length
             );
         }
     );
@@ -1218,9 +934,13 @@ export function getSharedCompatibilityStatus() {
 }
 
 export function getSharedCompatibilitySnapshot() {
-    return clone(
-        getCompatibilitySnapshot()
-    );
+    try {
+        return clone(
+            getCompatibilityStatus()
+        );
+    } catch {
+        return null;
+    }
 }
 
 export function canUseSharedCameraPreset() {
@@ -1239,20 +959,17 @@ export function shouldIsolatePlayer(player) {
     }
 
     const compatibility =
-        getPlayerCompatibility(player);
+        getCompatibility(player);
 
     if (!compatibility) {
-        return true;
+        return false;
     }
 
-    return (
-        Array.isArray(
-            compatibility.conflicts
-        ) &&
-        compatibility.conflicts.length > 0
-    ) ||
+    return Boolean(
         compatibility.status ===
-        "incompatible";
+        "incompatible" ||
+        compatibility.conflicts?.length
+    );
 }
 
 export function getRecommendedMultiplayerMode(
@@ -1268,10 +985,6 @@ export function getRecommendedMultiplayerMode(
     const status =
         getCompatibilityStatus();
 
-    if (status === "incompatible") {
-        return MULTIPLAYER_MODES.INDEPENDENT;
-    }
-
     if (status === "limited") {
         return MULTIPLAYER_MODES.SERVER_SAFE;
     }
@@ -1279,9 +992,7 @@ export function getRecommendedMultiplayerMode(
     return MULTIPLAYER_MODES.INDEPENDENT;
 }
 
-export function isMultiplayerSafe(
-    player = null
-) {
+export function isMultiplayerSafe(player = null) {
     if (
         player &&
         !isValidPlayer(player)
@@ -1291,8 +1002,7 @@ export function isMultiplayerSafe(
 
     const status =
         player
-            ? getPlayerCompatibility(player)
-                ?.status
+            ? getCompatibility(player)?.status
             : getCompatibilityStatus();
 
     return (
@@ -1302,9 +1012,7 @@ export function isMultiplayerSafe(
     );
 }
 
-export function isCameraSystemActive(
-    player
-) {
+export function isCameraSystemActive(player) {
     if (!isValidPlayer(player)) {
         return false;
     }
@@ -1314,16 +1022,6 @@ export function isCameraSystemActive(
     } catch {
         return false;
     }
-}
-
-export function getSessionSnapshot() {
-    return clone(
-        getOrCreateSession()
-    );
-}
-
-export function getSessionIdSafe() {
-    return getSessionId();
 }
 
 export function getSynchronizationInterval() {
@@ -1381,7 +1079,7 @@ export function removePlayer(player) {
     removePlayerReference(player);
 
     if (existed) {
-        bumpRevision();
+        revision++;
     }
 
     return existed;
@@ -1397,29 +1095,25 @@ export function shutdown() {
     const stopped =
         stopSynchronization();
 
-    for (const player of enumeratePlayers()) {
+    for (const player of getPlayers()) {
         removePlayerReference(player);
     }
 
-    sessions.clear();
     playerIds.clear();
 
-    sessionId = undefined;
     initialized = false;
-    lastSweepTick = -1;
+    lastSynchronizationTick = -1;
     lastCompatibilityTick = -1;
     lastCleanupTick = -1;
 
-    bumpRevision();
+    revision++;
 
     return stopped;
 }
 
 export function getSnapshot() {
-    const players =
-        enumeratePlayers();
-
-    const playerSnapshots = [];
+    const players = getPlayers();
+    const snapshots = [];
 
     for (const player of players) {
         if (!isValidPlayer(player)) {
@@ -1430,17 +1124,11 @@ export function getSnapshot() {
             getPlayerRecord(player);
 
         if (record) {
-            playerSnapshots.push(
+            snapshots.push(
                 clone(record)
             );
         }
     }
-
-    const activePlayerCount =
-        players.filter(
-            player =>
-                isValidPlayer(player)
-        ).length;
 
     return {
         initialized,
@@ -1449,7 +1137,10 @@ export function getSnapshot() {
             getPackRevision(),
         playerCount:
             players.length,
-        activePlayerCount,
+        activePlayerCount:
+            players.filter(
+                isValidPlayer
+            ).length,
         synchronizationRunning:
             isSynchronizationRunning(),
         synchronizationInterval:
@@ -1460,9 +1151,6 @@ export function getSnapshot() {
             DEFAULTS.cleanupInterval,
         compatibilityStatus:
             getCompatibilityStatus(),
-        session:
-            getSessionSnapshot(),
-        players:
-            playerSnapshots
+        players: snapshots
     };
 }

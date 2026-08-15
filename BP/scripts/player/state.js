@@ -3,11 +3,6 @@ import {
     clamp01
 } from "../utilities/math.js";
 
-import {
-    TickCache,
-    ChangeTracker
-} from "../utilities/performance.js";
-
 const PLAYER_STATES = Object.freeze({
     IDLE: "idle",
     WALKING: "walking",
@@ -36,11 +31,8 @@ function isValidPlayer(player) {
     }
 
     try {
-        if (typeof player.isValid === "function") {
-            return player.isValid();
-        }
-
-        return true;
+        return typeof player.isValid !== "function" ||
+            player.isValid();
     } catch {
         return false;
     }
@@ -78,7 +70,6 @@ function createState() {
         falling: false,
         jumping: false,
         climbing: false,
-
         gliding: false,
         riding: false,
         flying: false,
@@ -91,12 +82,8 @@ function createState() {
         movementSpeed: 0,
 
         tick: -1,
-
         initialized: false,
-        stateChanged: false,
-
-        cache: new TickCache(),
-        tracker: new ChangeTracker(PLAYER_STATES.IDLE)
+        stateChanged: false
     };
 }
 
@@ -111,50 +98,16 @@ function getInternalState(player) {
     return state;
 }
 
-function readBooleanProperty(object, propertyName) {
-    if (!object) {
-        return false;
-    }
-
+function readBoolean(player, property) {
     try {
-        return object[propertyName] === true;
-    } catch {
-        return false;
-    }
-}
-
-function readBooleanMethod(object, methodName) {
-    if (!object) {
-        return false;
-    }
-
-    try {
-        const method = object[methodName];
-
-        if (typeof method !== "function") {
-            return false;
-        }
-
-        return method.call(object) === true;
-    } catch {
-        return false;
-    }
-}
-
-function readBooleanValue(object, name) {
-    if (!object) {
-        return false;
-    }
-
-    try {
-        const value = object[name];
+        const value = player?.[property];
 
         if (typeof value === "boolean") {
             return value;
         }
 
         if (typeof value === "function") {
-            return value.call(object) === true;
+            return value.call(player) === true;
         }
     } catch {
     }
@@ -176,20 +129,20 @@ function readVelocity(player) {
     }
 }
 
-function calculateHorizontalSpeed(velocity) {
-    const x = sanitizeNumber(velocity?.x, 0);
-    const z = sanitizeNumber(velocity?.z, 0);
-
-    return Math.hypot(x, z);
-}
-
-function calculateVerticalSpeed(velocity) {
-    return Math.abs(
-        sanitizeNumber(velocity?.y, 0)
+function getHorizontalSpeed(velocity) {
+    return Math.hypot(
+        sanitizeNumber(velocity.x, 0),
+        sanitizeNumber(velocity.z, 0)
     );
 }
 
-function readGroundedState(player, velocity) {
+function getVerticalSpeed(velocity) {
+    return Math.abs(
+        sanitizeNumber(velocity.y, 0)
+    );
+}
+
+function isGrounded(player, velocity) {
     try {
         if (typeof player.isOnGround === "boolean") {
             return player.isOnGround;
@@ -197,185 +150,73 @@ function readGroundedState(player, velocity) {
     } catch {
     }
 
-    try {
-        if (typeof player.isOnGround === "function") {
-            return player.isOnGround();
-        }
-    } catch {
-    }
-
     return Math.abs(
-        sanitizeNumber(velocity?.y, 0)
+        sanitizeNumber(velocity.y, 0)
     ) <= VERTICAL_EPSILON;
 }
 
-function readSneakingState(player) {
-    if (readBooleanProperty(player, "isSneaking")) {
-        return true;
-    }
-
-    return readBooleanMethod(
-        player,
-        "isSneaking"
-    );
-}
-
-function readSprintingState(player) {
-    if (readBooleanProperty(player, "isSprinting")) {
-        return true;
-    }
-
-    return readBooleanMethod(
-        player,
-        "isSprinting"
-    );
-}
-
-function readSwimmingState(player) {
-    if (readBooleanProperty(player, "isSwimming")) {
-        return true;
-    }
-
-    return readBooleanMethod(
-        player,
-        "isSwimming"
-    );
-}
-
-function readCrawlingState(player) {
-    if (readBooleanProperty(player, "isCrawling")) {
-        return true;
-    }
-
-    return readBooleanMethod(
-        player,
-        "isCrawling"
-    );
-}
-
-function readClimbingState(player) {
-    if (readBooleanProperty(player, "isClimbing")) {
-        return true;
-    }
-
-    return readBooleanMethod(
-        player,
-        "isClimbing"
-    );
-}
-
-function readGlidingState(player) {
-    if (readBooleanProperty(player, "isGliding")) {
-        return true;
-    }
-
-    return readBooleanMethod(
-        player,
-        "isGliding"
-    );
-}
-
-function readFlyingState(player) {
-    if (readBooleanProperty(player, "isFlying")) {
-        return true;
-    }
-
-    return readBooleanMethod(
-        player,
-        "isFlying"
-    );
-}
-
-function readRidingState(player) {
+function isRidingPlayer(player) {
     try {
-        if (
-            typeof player.getComponent === "function"
-        ) {
-            const riding =
-                player.getComponent(
-                    "minecraft:riding"
-                );
-
-            if (riding) {
-                return true;
-            }
-        }
-    } catch {
-    }
-
-    return false;
-}
-
-function readDeadState(player) {
-    try {
-        if (
-            typeof player.getComponent !== "function"
-        ) {
+        if (typeof player.getComponent !== "function") {
             return false;
         }
 
-        const health =
-            player.getComponent(
-                "minecraft:health"
-            );
-
-        if (!health) {
-            return false;
-        }
-
-        const current =
-            sanitizeNumber(
-                health.currentValue,
-                NaN
-            );
-
-        return Number.isFinite(current) &&
-            current <= 0;
+        return Boolean(
+            player.getComponent("minecraft:riding")
+        );
     } catch {
         return false;
     }
 }
 
-function readMovementSpeed(player) {
+function isDeadPlayer(player) {
     try {
-        if (
-            typeof player.getComponent !== "function"
-        ) {
+        if (typeof player.getComponent !== "function") {
+            return false;
+        }
+
+        const health =
+            player.getComponent("minecraft:health");
+
+        if (!health) {
+            return false;
+        }
+
+        const value = sanitizeNumber(
+            health.currentValue,
+            NaN
+        );
+
+        return Number.isFinite(value) && value <= 0;
+    } catch {
+        return false;
+    }
+}
+
+function getMovementSpeed(player) {
+    try {
+        if (typeof player.getComponent !== "function") {
             return 0;
         }
 
         const movement =
-            player.getComponent(
-                "minecraft:movement"
-            );
+            player.getComponent("minecraft:movement");
 
         if (!movement) {
             return 0;
         }
 
-        const current =
+        return Math.max(
+            0,
             sanitizeNumber(
-                movement.currentValue,
-                NaN
-            );
-
-        if (Number.isFinite(current)) {
-            return Math.max(0, current);
-        }
-
-        const defaultValue =
-            sanitizeNumber(
+                movement.currentValue ??
                 movement.defaultValue,
-                NaN
-            );
-
-        if (Number.isFinite(defaultValue)) {
-            return Math.max(0, defaultValue);
-        }
+                0
+            )
+        );
     } catch {
+        return 0;
     }
-
-    return 0;
 }
 
 function detectState(data) {
@@ -431,69 +272,55 @@ function detectState(data) {
 }
 
 function readPlayerState(player) {
-    const velocity =
-        readVelocity(player);
+    const velocity = readVelocity(player);
 
     const horizontalSpeed =
-        calculateHorizontalSpeed(
-            velocity
-        );
-
-    const verticalSpeed =
-        calculateVerticalSpeed(
-            velocity
-        );
+        getHorizontalSpeed(velocity);
 
     const grounded =
-        readGroundedState(
-            player,
-            velocity
-        );
+        isGrounded(player, velocity);
 
     const swimming =
-        readSwimmingState(player);
+        readBoolean(player, "isSwimming");
 
     const gliding =
-        readGlidingState(player);
+        readBoolean(player, "isGliding");
 
     const flying =
-        readFlyingState(player);
+        readBoolean(player, "isFlying");
 
     const climbing =
-        readClimbingState(player);
+        readBoolean(player, "isClimbing");
 
     const riding =
-        readRidingState(player);
+        isRidingPlayer(player);
 
     const dead =
-        readDeadState(player);
+        isDeadPlayer(player);
 
     const sneaking =
-        readSneakingState(player);
+        readBoolean(player, "isSneaking");
 
     const sprinting =
-        readSprintingState(player);
+        readBoolean(player, "isSprinting");
 
     const crawling =
         !swimming &&
-        readCrawlingState(player);
+        readBoolean(player, "isCrawling");
 
     const moving =
-        horizontalSpeed >
-        SPEED_EPSILON;
+        horizontalSpeed > SPEED_EPSILON;
 
     const falling =
         !grounded &&
-        velocity.y <
-        -VERTICAL_EPSILON &&
+        velocity.y < -VERTICAL_EPSILON &&
         !swimming &&
         !gliding &&
         !flying;
 
     const jumping =
         !grounded &&
-        velocity.y >
-        VERTICAL_EPSILON &&
+        velocity.y > VERTICAL_EPSILON &&
         !swimming &&
         !gliding &&
         !flying;
@@ -516,130 +343,76 @@ function readPlayerState(player) {
         flying,
         dead,
 
-        velocity: cloneVelocity(
-            velocity
-        ),
-
+        velocity,
         horizontalSpeed,
-        verticalSpeed,
+
+        verticalSpeed:
+            getVerticalSpeed(velocity),
 
         movementSpeed:
-            readMovementSpeed(player)
+            getMovementSpeed(player)
     };
 
-    data.current =
-        detectState(data);
+    data.current = detectState(data);
 
     return data;
 }
 
-function applyState(
-    state,
-    data,
-    tick
-) {
-    const wasInitialized =
-        state.initialized;
-
-    const previousState =
-        state.current;
+function applyState(state, data, tick) {
+    const previous = state.current;
 
     state.previous =
-        wasInitialized
-            ? previousState
+        state.initialized
+            ? previous
             : data.current;
 
-    state.current =
-        data.current;
+    state.current = data.current;
 
-    state.grounded =
-        data.grounded;
+    state.grounded = data.grounded;
+    state.moving = data.moving;
 
-    state.moving =
-        data.moving;
+    state.sprinting = data.sprinting;
+    state.sneaking = data.sneaking;
+    state.swimming = data.swimming;
+    state.crawling = data.crawling;
 
-    state.sprinting =
-        data.sprinting;
+    state.falling = data.falling;
+    state.jumping = data.jumping;
+    state.climbing = data.climbing;
 
-    state.sneaking =
-        data.sneaking;
-
-    state.swimming =
-        data.swimming;
-
-    state.crawling =
-        data.crawling;
-
-    state.falling =
-        data.falling;
-
-    state.jumping =
-        data.jumping;
-
-    state.climbing =
-        data.climbing;
-
-    state.gliding =
-        data.gliding;
-
-    state.riding =
-        data.riding;
-
-    state.flying =
-        data.flying;
-
-    state.dead =
-        data.dead;
+    state.gliding = data.gliding;
+    state.riding = data.riding;
+    state.flying = data.flying;
+    state.dead = data.dead;
 
     state.velocity =
-        cloneVelocity(
-            data.velocity
-        );
+        cloneVelocity(data.velocity);
 
     state.horizontalSpeed =
-        sanitizeNumber(
-            data.horizontalSpeed,
-            0
-        );
+        data.horizontalSpeed;
 
     state.verticalSpeed =
-        sanitizeNumber(
-            data.verticalSpeed,
-            0
-        );
+        data.verticalSpeed;
 
     state.movementSpeed =
-        sanitizeNumber(
-            data.movementSpeed,
-            0
-        );
+        data.movementSpeed;
 
     state.tick = tick;
 
     state.stateChanged =
-        wasInitialized &&
-        state.previous !==
-        state.current;
-
-    state.tracker.update(
-        state.current
-    );
+        state.initialized &&
+        state.previous !== state.current;
 
     state.initialized = true;
 }
 
 function normalizeTick(tick) {
-    if (!Number.isFinite(tick)) {
-        return 0;
-    }
-
-    return Math.floor(tick);
+    return Number.isFinite(tick)
+        ? Math.floor(tick)
+        : 0;
 }
 
-export function update(
-    player,
-    tick = 0
-) {
+export function update(player, tick = 0) {
     if (!isValidPlayer(player)) {
         return false;
     }
@@ -647,29 +420,10 @@ export function update(
     const state =
         getInternalState(player);
 
-    const normalizedTick =
-        normalizeTick(tick);
-
-    if (
-        state.cache.get(
-            normalizedTick
-        ) !== undefined
-    ) {
-        return true;
-    }
-
-    const data =
-        readPlayerState(player);
-
     applyState(
         state,
-        data,
-        normalizedTick
-    );
-
-    state.cache.set(
-        normalizedTick,
-        true
+        readPlayerState(player),
+        normalizeTick(tick)
     );
 
     return true;
@@ -683,23 +437,15 @@ export function refresh(player) {
     const state =
         getInternalState(player);
 
-    const nextTick =
+    const tick =
         state.tick < 0
             ? 0
             : state.tick + 1;
 
-    const data =
-        readPlayerState(player);
-
     applyState(
         state,
-        data,
-        nextTick
-    );
-
-    state.cache.set(
-        nextTick,
-        true
+        readPlayerState(player),
+        tick
     );
 
     return true;
@@ -735,9 +481,7 @@ export function get(player) {
         dead: state.dead,
 
         velocity:
-            cloneVelocity(
-                state.velocity
-            ),
+            cloneVelocity(state.velocity),
 
         horizontalSpeed:
             state.horizontalSpeed,
@@ -749,12 +493,8 @@ export function get(player) {
             state.movementSpeed,
 
         tick: state.tick,
-
-        initialized:
-            state.initialized,
-
-        stateChanged:
-            state.stateChanged
+        initialized: state.initialized,
+        stateChanged: state.stateChanged
     };
 }
 
@@ -763,8 +503,7 @@ export function getState(player) {
         return null;
     }
 
-    return getInternalState(player)
-        .current;
+    return getInternalState(player).current;
 }
 
 export function getPreviousState(player) {
@@ -772,8 +511,7 @@ export function getPreviousState(player) {
         return null;
     }
 
-    return getInternalState(player)
-        .previous;
+    return getInternalState(player).previous;
 }
 
 export function hasChanged(player) {
@@ -781,8 +519,7 @@ export function hasChanged(player) {
         return false;
     }
 
-    return getInternalState(player)
-        .stateChanged;
+    return getInternalState(player).stateChanged;
 }
 
 export function is(player, stateName) {
@@ -790,132 +527,72 @@ export function is(player, stateName) {
         return false;
     }
 
-    if (
-        typeof stateName !== "string" ||
-        stateName.length === 0
-    ) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .current === stateName;
+    return getInternalState(player).current === stateName;
 }
 
 export function isMoving(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .moving;
+    return isValidPlayer(player) &&
+        getInternalState(player).moving;
 }
 
 export function isGrounded(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .grounded;
+    return isValidPlayer(player) &&
+        getInternalState(player).grounded;
 }
 
 export function isSprinting(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .sprinting;
+    return isValidPlayer(player) &&
+        getInternalState(player).sprinting;
 }
 
 export function isSneaking(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .sneaking;
+    return isValidPlayer(player) &&
+        getInternalState(player).sneaking;
 }
 
 export function isSwimming(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .swimming;
+    return isValidPlayer(player) &&
+        getInternalState(player).swimming;
 }
 
 export function isCrawling(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .crawling;
+    return isValidPlayer(player) &&
+        getInternalState(player).crawling;
 }
 
 export function isFalling(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .falling;
+    return isValidPlayer(player) &&
+        getInternalState(player).falling;
 }
 
 export function isJumping(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .jumping;
+    return isValidPlayer(player) &&
+        getInternalState(player).jumping;
 }
 
 export function isClimbing(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .climbing;
+    return isValidPlayer(player) &&
+        getInternalState(player).climbing;
 }
 
 export function isGliding(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .gliding;
+    return isValidPlayer(player) &&
+        getInternalState(player).gliding;
 }
 
 export function isRiding(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .riding;
+    return isValidPlayer(player) &&
+        getInternalState(player).riding;
 }
 
 export function isFlying(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .flying;
+    return isValidPlayer(player) &&
+        getInternalState(player).flying;
 }
 
 export function isDead(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .dead;
+    return isValidPlayer(player) &&
+        getInternalState(player).dead;
 }
 
 export function getVelocity(player) {
@@ -924,8 +601,7 @@ export function getVelocity(player) {
     }
 
     return cloneVelocity(
-        getInternalState(player)
-            .velocity
+        getInternalState(player).velocity
     );
 }
 
@@ -934,8 +610,7 @@ export function getHorizontalSpeed(player) {
         return 0;
     }
 
-    return getInternalState(player)
-        .horizontalSpeed;
+    return getInternalState(player).horizontalSpeed;
 }
 
 export function getVerticalSpeed(player) {
@@ -943,8 +618,7 @@ export function getVerticalSpeed(player) {
         return 0;
     }
 
-    return getInternalState(player)
-        .verticalSpeed;
+    return getInternalState(player).verticalSpeed;
 }
 
 export function getMovementSpeed(player) {
@@ -952,14 +626,12 @@ export function getMovementSpeed(player) {
         return 0;
     }
 
-    return getInternalState(player)
-        .movementSpeed;
+    return getInternalState(player).movementSpeed;
 }
 
 export function getMovementFactor(
     player,
-    maximumSpeed =
-        DEFAULT_MAXIMUM_SPEED
+    maximumSpeed = DEFAULT_MAXIMUM_SPEED
 ) {
     if (!isValidPlayer(player)) {
         return 0;
@@ -976,8 +648,7 @@ export function getMovementFactor(
     }
 
     return clamp01(
-        getInternalState(player)
-            .horizontalSpeed / maximum
+        getHorizontalSpeed(player) / maximum
     );
 }
 
@@ -990,12 +661,8 @@ export function getAllStates() {
 }
 
 export function isInitialized(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player)
-        .initialized;
+    return isValidPlayer(player) &&
+        getInternalState(player).initialized;
 }
 
 export function getTick(player) {
@@ -1003,17 +670,7 @@ export function getTick(player) {
         return -1;
     }
 
-    return getInternalState(player)
-        .tick;
-}
-
-export function getTracker(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return getInternalState(player)
-        .tracker;
+    return getInternalState(player).tick;
 }
 
 export function reset(player) {
@@ -1021,9 +678,7 @@ export function reset(player) {
         return false;
     }
 
-    states.delete(player);
-
-    return true;
+    return states.delete(player);
 }
 
 export function resetAll(players) {

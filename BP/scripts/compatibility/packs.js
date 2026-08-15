@@ -26,29 +26,13 @@ const CAPABILITIES = Object.freeze({
     CUSTOM_PLAYER_RENDERING: "custom_player_rendering"
 });
 
-const DEFAULT_PROFILE = Object.freeze({
-    status: PACK_STATUS.UNKNOWN,
-    type: PACK_TYPES.UNKNOWN,
-    priority: 0,
-    trusted: false,
-    registered: false,
-    capabilities: Object.freeze([]),
-    conflicts: Object.freeze([]),
-    notes: Object.freeze([])
-});
-
 const packs = new Map();
-const compatibilityCache = new Map();
 const playerProfiles = new WeakMap();
 
 let initialized = false;
 let revision = 0;
 
 function clone(value) {
-    if (value === undefined) {
-        return undefined;
-    }
-
     try {
         return JSON.parse(JSON.stringify(value));
     } catch {
@@ -57,20 +41,8 @@ function clone(value) {
 }
 
 function normalizeString(value, fallback = "") {
-    return typeof value === "string" && value.trim().length > 0
+    return typeof value === "string" && value.trim()
         ? value.trim()
-        : fallback;
-}
-
-function normalizeNumber(value, fallback = 0) {
-    return typeof value === "number" && Number.isFinite(value)
-        ? value
-        : fallback;
-}
-
-function normalizeBoolean(value, fallback = false) {
-    return typeof value === "boolean"
-        ? value
         : fallback;
 }
 
@@ -79,151 +51,45 @@ function normalizeArray(value) {
         return [];
     }
 
-    return [
-        ...new Set(
-            value
-                .filter(
-                    item =>
-                        typeof item === "string" &&
-                        item.trim().length > 0
-                )
-                .map(item => item.trim())
-        )
-    ];
+    return [...new Set(
+        value
+            .filter(item => typeof item === "string" && item.trim())
+            .map(item => item.trim())
+    )];
 }
 
-function normalizeIdentifier(identifier) {
-    return normalizeString(identifier)
-        .toLowerCase();
+function normalizeIdentifier(value) {
+    return normalizeString(value).toLowerCase();
 }
 
-function normalizeStatus(status) {
-    return Object.values(PACK_STATUS).includes(status)
-        ? status
+function normalizeStatus(value) {
+    return Object.values(PACK_STATUS).includes(value)
+        ? value
         : PACK_STATUS.UNKNOWN;
 }
 
-function normalizePackType(type) {
-    return Object.values(PACK_TYPES).includes(type)
-        ? type
+function normalizeType(value) {
+    return Object.values(PACK_TYPES).includes(value)
+        ? value
         : PACK_TYPES.UNKNOWN;
 }
 
-function normalizeCapability(capability) {
-    const value = normalizeString(capability);
-
-    if (!value) {
-        return null;
-    }
-
-    return value;
+function normalizeCapability(value) {
+    return normalizeString(value);
 }
 
 function bumpRevision() {
     revision++;
-
-    compatibilityCache.clear();
 }
 
-function normalizeProfile(profile = {}) {
-    const source =
-        profile &&
-            typeof profile === "object"
-            ? profile
-            : {};
-
-    return {
-        status: normalizeStatus(
-            source.status ??
-            DEFAULT_PROFILE.status
-        ),
-
-        type: normalizePackType(
-            source.type ??
-            DEFAULT_PROFILE.type
-        ),
-
-        priority: normalizeNumber(
-            source.priority,
-            DEFAULT_PROFILE.priority
-        ),
-
-        trusted: normalizeBoolean(
-            source.trusted,
-            DEFAULT_PROFILE.trusted
-        ),
-
-        registered: normalizeBoolean(
-            source.registered,
-            DEFAULT_PROFILE.registered
-        ),
-
-        capabilities: normalizeArray(
-            source.capabilities
-        ),
-
-        conflicts: normalizeArray(
-            source.conflicts
-        ),
-
-        notes: normalizeArray(
-            source.notes
-        )
-    };
-}
-
-function createPack(identifier, metadata = {}) {
-    const id = normalizeIdentifier(identifier);
-
-    if (!id) {
+function getPlayerId(player) {
+    try {
+        return typeof player?.id === "string" && player.id.length > 0
+            ? player.id
+            : null;
+    } catch {
         return null;
     }
-
-    const source =
-        metadata &&
-            typeof metadata === "object"
-            ? metadata
-            : {};
-
-    return {
-        identifier: id,
-
-        name: normalizeString(
-            source.name,
-            id
-        ),
-
-        version: normalizeString(
-            source.version,
-            "unknown"
-        ),
-
-        type: normalizePackType(
-            source.type ??
-            PACK_TYPES.UNKNOWN
-        ),
-
-        namespace: normalizeString(
-            source.namespace
-        ),
-
-        description: normalizeString(
-            source.description
-        ),
-
-        profile: normalizeProfile(
-            source.profile
-        ),
-
-        enabled: normalizeBoolean(
-            source.enabled,
-            true
-        ),
-
-        registeredAt: Date.now(),
-
-        metadata: clone(source)
-    };
 }
 
 function detectScriptApi() {
@@ -239,7 +105,7 @@ function detectScriptApi() {
     }
 }
 
-function detectCameraPresetSupport() {
+function detectCameraSupport() {
     try {
         return Boolean(
             world &&
@@ -250,358 +116,102 @@ function detectCameraPresetSupport() {
     }
 }
 
-function detectRuntimeCapabilities() {
+function getRuntimeCapabilities() {
     const capabilities = [];
 
     if (detectScriptApi()) {
-        capabilities.push(
-            CAPABILITIES.SCRIPT_API
-        );
+        capabilities.push(CAPABILITIES.SCRIPT_API);
     }
 
-    if (detectCameraPresetSupport()) {
-        capabilities.push(
-            CAPABILITIES.CAMERA_PRESETS
-        );
+    if (detectCameraSupport()) {
+        capabilities.push(CAPABILITIES.CAMERA_PRESETS);
     }
 
     return capabilities;
 }
 
 function getRuntimeProfile() {
-    const capabilities =
-        detectRuntimeCapabilities();
-
-    const scriptApiAvailable =
-        capabilities.includes(
-            CAPABILITIES.SCRIPT_API
-        );
+    const capabilities = getRuntimeCapabilities();
+    const scriptApi = capabilities.includes(CAPABILITIES.SCRIPT_API);
 
     return {
-        status: scriptApiAvailable
+        status: scriptApi
             ? PACK_STATUS.COMPATIBLE
             : PACK_STATUS.LIMITED,
-
         type: PACK_TYPES.ADDON,
-
-        priority: Number.MAX_SAFE_INTEGER,
-
-        trusted: true,
-
-        registered: false,
-
         capabilities,
-
         conflicts: [],
-
-        notes: scriptApiAvailable
+        warnings: scriptApi
             ? []
-            : [
-                "Minecraft Script API runtime is unavailable."
-            ]
+            : ["script_api_unavailable"]
+    };
+}
+
+function createPack(identifier, metadata = {}) {
+    const id = normalizeIdentifier(identifier);
+
+    if (!id) {
+        return null;
+    }
+
+    const profile = metadata.profile ?? {};
+
+    return {
+        identifier: id,
+        name: normalizeString(metadata.name, id),
+        version: normalizeString(metadata.version, "unknown"),
+        type: normalizeType(metadata.type),
+        namespace: normalizeString(metadata.namespace),
+        enabled: metadata.enabled !== false,
+        profile: {
+            status: normalizeStatus(profile.status),
+            capabilities: normalizeArray(profile.capabilities),
+            conflicts: normalizeArray(profile.conflicts),
+            warnings: normalizeArray(profile.warnings ?? profile.notes)
+        }
     };
 }
 
 function getPack(identifier) {
-    const id =
-        normalizeIdentifier(identifier);
-
-    if (!id) {
-        return null;
-    }
-
-    return packs.get(id) ?? null;
-}
-
-function setPack(identifier, metadata = {}) {
-    const pack =
-        createPack(
-            identifier,
-            metadata
-        );
-
-    if (!pack) {
-        return false;
-    }
-
-    packs.set(
-        pack.identifier,
-        pack
-    );
-
-    bumpRevision();
-
-    return true;
-}
-
-function removePack(identifier) {
-    const id =
-        normalizeIdentifier(identifier);
-
-    if (!id) {
-        return false;
-    }
-
-    const removed =
-        packs.delete(id);
-
-    if (removed) {
-        bumpRevision();
-    }
-
-    return removed;
-}
-
-function getAllRegisteredPacks() {
-    return [
-        ...packs.values()
-    ];
-}
-
-function getEnabledPacks() {
-    return getAllRegisteredPacks()
-        .filter(pack => pack.enabled);
-}
-
-function hasCapability(profile, capability) {
-    const normalized =
-        normalizeCapability(capability);
-
-    if (!normalized) {
-        return false;
-    }
-
-    return Array.isArray(profile?.capabilities) &&
-        profile.capabilities.includes(
-            normalized
-        );
-}
-
-function mergeProfiles(base, override) {
-    const result =
-        normalizeProfile(base);
-
-    if (
-        !override ||
-        typeof override !== "object"
-    ) {
-        return result;
-    }
-
-    if (override.status !== undefined) {
-        result.status =
-            normalizeStatus(
-                override.status
-            );
-    }
-
-    if (override.type !== undefined) {
-        result.type =
-            normalizePackType(
-                override.type
-            );
-    }
-
-    if (override.priority !== undefined) {
-        result.priority =
-            normalizeNumber(
-                override.priority,
-                result.priority
-            );
-    }
-
-    if (override.trusted !== undefined) {
-        result.trusted =
-            normalizeBoolean(
-                override.trusted,
-                result.trusted
-            );
-    }
-
-    if (override.registered !== undefined) {
-        result.registered =
-            normalizeBoolean(
-                override.registered,
-                result.registered
-            );
-    }
-
-    result.capabilities = [
-        ...new Set([
-            ...result.capabilities,
-            ...normalizeArray(
-                override.capabilities
-            )
-        ])
-    ];
-
-    result.conflicts = [
-        ...new Set([
-            ...result.conflicts,
-            ...normalizeArray(
-                override.conflicts
-            )
-        ])
-    ];
-
-    result.notes = [
-        ...new Set([
-            ...result.notes,
-            ...normalizeArray(
-                override.notes
-            )
-        ])
-    ];
-
-    return result;
+    return packs.get(
+        normalizeIdentifier(identifier)
+    ) ?? null;
 }
 
 function calculateCompatibility() {
-    const registered =
-        getEnabledPacks();
+    const runtime = getRuntimeProfile();
+    const enabledPacks = [...packs.values()].filter(pack => pack.enabled);
 
-    const allRegistered =
-        getAllRegisteredPacks();
+    let status = runtime.status;
+    const capabilities = [...runtime.capabilities];
+    const conflicts = [];
+    const warnings = [...runtime.warnings];
 
-    const runtimeCapabilities =
-        detectRuntimeCapabilities();
+    for (const pack of enabledPacks) {
+        const profile = pack.profile;
 
-    const result = {
-        status: PACK_STATUS.COMPATIBLE,
+        capabilities.push(...profile.capabilities);
+        conflicts.push(...profile.conflicts);
+        warnings.push(...profile.warnings);
 
-        packs: registered.length,
+        if (profile.status === PACK_STATUS.INCOMPATIBLE) {
+            status = PACK_STATUS.INCOMPATIBLE;
+        } else if (
+            profile.status === PACK_STATUS.LIMITED &&
+            status === PACK_STATUS.COMPATIBLE
+        ) {
+            status = PACK_STATUS.LIMITED;
+        }
+    }
 
-        registeredPacks:
-            allRegistered.length,
-
-        enabledPacks:
-            registered.length,
-
-        disabledPacks:
-            allRegistered.length -
-            registered.length,
-
-        conflicts: [],
-
-        warnings: [],
-
-        capabilities: [
-            ...runtimeCapabilities
-        ],
-
+    return {
+        status,
+        packs: enabledPacks.length,
+        capabilities: [...new Set(capabilities)],
+        conflicts: [...new Set(conflicts)],
+        warnings: [...new Set(warnings)],
         revision
     };
-
-    if (
-        !runtimeCapabilities.includes(
-            CAPABILITIES.SCRIPT_API
-        )
-    ) {
-        result.status =
-            PACK_STATUS.LIMITED;
-
-        result.warnings.push(
-            "Minecraft Script API is unavailable."
-        );
-    }
-
-    for (const pack of registered) {
-        const profile =
-            normalizeProfile(
-                pack.profile
-            );
-
-        result.capabilities = [
-            ...new Set([
-                ...result.capabilities,
-                ...profile.capabilities
-            ])
-        ];
-
-        result.conflicts.push(
-            ...profile.conflicts
-        );
-
-        result.warnings.push(
-            ...profile.notes
-        );
-
-        if (
-            profile.status ===
-            PACK_STATUS.INCOMPATIBLE
-        ) {
-            result.status =
-                PACK_STATUS.INCOMPATIBLE;
-        } else if (
-            profile.status ===
-            PACK_STATUS.LIMITED &&
-            result.status ===
-            PACK_STATUS.COMPATIBLE
-        ) {
-            result.status =
-                PACK_STATUS.LIMITED;
-        }
-    }
-
-    result.conflicts = [
-        ...new Set(
-            result.conflicts
-        )
-    ];
-
-    result.warnings = [
-        ...new Set(
-            result.warnings
-        )
-    ];
-
-    return result;
-}
-
-function cacheCompatibility(
-    key,
-    value
-) {
-    compatibilityCache.set(
-        key,
-        {
-            revision,
-            value: clone(value)
-        }
-    );
-}
-
-function getCachedCompatibility(key) {
-    const entry =
-        compatibilityCache.get(key);
-
-    if (
-        !entry ||
-        entry.revision !== revision
-    ) {
-        return null;
-    }
-
-    return clone(
-        entry.value
-    );
-}
-
-function getPlayerKey(player) {
-    if (!player) {
-        return null;
-    }
-
-    try {
-        const id = player.id;
-
-        return typeof id === "string" &&
-            id.length > 0
-            ? id
-            : null;
-    } catch {
-        return null;
-    }
 }
 
 function getPlayerProfile(player) {
@@ -609,94 +219,20 @@ function getPlayerProfile(player) {
         return null;
     }
 
-    let profile =
-        playerProfiles.get(player);
+    let profile = playerProfiles.get(player);
 
     if (!profile) {
         profile = {
-            known: true,
-            firstSeen: Date.now(),
-            lastUpdated: Date.now(),
             status: PACK_STATUS.UNKNOWN,
             capabilities: [],
             conflicts: [],
             warnings: []
         };
 
-        playerProfiles.set(
-            player,
-            profile
-        );
+        playerProfiles.set(player, profile);
     }
 
     return profile;
-}
-
-function updatePlayerProfile(
-    player,
-    profile
-) {
-    if (!player) {
-        return false;
-    }
-
-    const current =
-        getPlayerProfile(player);
-
-    if (!current) {
-        return false;
-    }
-
-    const normalized =
-        normalizeProfile(profile);
-
-    current.status =
-        normalized.status;
-
-    current.capabilities = [
-        ...new Set([
-            ...current.capabilities,
-            ...normalized.capabilities
-        ])
-    ];
-
-    current.conflicts = [
-        ...new Set([
-            ...current.conflicts,
-            ...normalized.conflicts
-        ])
-    ];
-
-    current.warnings = [
-        ...new Set([
-            ...current.warnings,
-            ...normalized.notes
-        ])
-    ];
-
-    current.lastUpdated =
-        Date.now();
-
-    return true;
-}
-
-function removeFromArray(array, value) {
-    const index =
-        array.indexOf(value);
-
-    if (index === -1) {
-        return false;
-    }
-
-    array.splice(index, 1);
-
-    return true;
-}
-
-function normalizePlayerStatus(
-    status
-) {
-    return normalizeStatus(status);
 }
 
 export function initialize() {
@@ -706,103 +242,101 @@ export function initialize() {
 
     initialized = true;
 
-    const runtimeProfile =
-        getRuntimeProfile();
+    const runtime = getRuntimeProfile();
 
-    setPack(
+    packs.set(
         "vantage:runtime",
-        {
+        createPack("vantage:runtime", {
             name: "Vantage Runtime",
             version: "1.0.0",
             type: PACK_TYPES.ADDON,
             namespace: "vantage",
-            description:
-                "Runtime capabilities exposed by the Minecraft Script API.",
-            profile: runtimeProfile
-        }
+            profile: runtime
+        })
     );
+
+    bumpRevision();
 
     return getCompatibilitySnapshot();
 }
 
-export function registerPack(
-    identifier,
-    metadata = {}
-) {
-    const id =
-        normalizeIdentifier(identifier);
+export function registerPack(identifier, metadata = {}) {
+    const pack = createPack(identifier, metadata);
+
+    if (!pack) {
+        return false;
+    }
+
+    packs.set(pack.identifier, pack);
+    bumpRevision();
+
+    return true;
+}
+
+export function unregisterPack(identifier) {
+    const id = normalizeIdentifier(identifier);
 
     if (!id) {
         return false;
     }
 
-    const profile =
-        normalizeProfile(
-            metadata.profile
-        );
+    const removed = packs.delete(id);
 
-    profile.registered = true;
+    if (removed) {
+        bumpRevision();
+    }
 
-    return setPack(
-        id,
-        {
-            ...metadata,
-            profile
-        }
-    );
+    return removed;
 }
 
-export function unregisterPack(
-    identifier
-) {
-    return removePack(identifier);
-}
-
-export function registerCompatibilityProfile(
-    identifier,
-    profile = {}
-) {
-    const id =
-        normalizeIdentifier(identifier);
+export function registerCompatibilityProfile(identifier, profile = {}) {
+    const id = normalizeIdentifier(identifier);
 
     if (!id) {
         return false;
     }
 
-    const existing =
-        getPack(id);
+    const existing = getPack(id);
 
     if (existing) {
-        existing.profile =
-            mergeProfiles(
-                existing.profile,
-                profile
-            );
-
-        existing.profile.registered =
-            true;
+        existing.profile = {
+            ...existing.profile,
+            ...profile,
+            status: normalizeStatus(
+                profile.status ?? existing.profile.status
+            ),
+            capabilities: [
+                ...new Set([
+                    ...existing.profile.capabilities,
+                    ...normalizeArray(profile.capabilities)
+                ])
+            ],
+            conflicts: [
+                ...new Set([
+                    ...existing.profile.conflicts,
+                    ...normalizeArray(profile.conflicts)
+                ])
+            ],
+            warnings: [
+                ...new Set([
+                    ...existing.profile.warnings,
+                    ...normalizeArray(profile.warnings ?? profile.notes)
+                ])
+            ]
+        };
 
         bumpRevision();
 
         return true;
     }
 
-    return registerPack(
-        id,
-        {
-            profile: {
-                ...profile,
-                registered: true
-            }
-        }
-    );
+    return registerPack(id, {
+        profile
+    });
 }
 
-export function getRegisteredPack(
-    identifier
-) {
-    const pack =
-        getPack(identifier);
+export function getRegisteredPack(identifier) {
+    const pack = getPack(identifier);
 
     return pack
         ? clone(pack)
@@ -810,374 +344,174 @@ export function getRegisteredPack(
 }
 
 export function getRegisteredPacks() {
-    return clone(
-        getAllRegisteredPacks()
-    );
+    return clone([...packs.values()]);
 }
 
 export function getEnabledRegisteredPacks() {
     return clone(
-        getEnabledPacks()
+        [...packs.values()].filter(pack => pack.enabled)
     );
 }
 
-export function isPackRegistered(
-    identifier
-) {
-    return Boolean(
-        getPack(identifier)
-    );
+export function isPackRegistered(identifier) {
+    return Boolean(getPack(identifier));
 }
 
-export function getPackStatus(
-    identifier
-) {
-    const pack =
-        getPack(identifier);
+export function getPackStatus(identifier) {
+    const pack = getPack(identifier);
 
-    if (!pack) {
+    if (!pack || !pack.enabled) {
         return PACK_STATUS.UNKNOWN;
     }
 
-    if (!pack.enabled) {
-        return PACK_STATUS.UNKNOWN;
-    }
-
-    return pack.profile?.status ??
-        PACK_STATUS.UNKNOWN;
+    return pack.profile.status;
 }
 
-export function getPackCapabilities(
-    identifier
-) {
-    const pack =
-        getPack(identifier);
+export function getPackCapabilities(identifier) {
+    const pack = getPack(identifier);
 
     if (!pack || !pack.enabled) {
         return [];
     }
 
-    return [
-        ...pack.profile.capabilities
-    ];
+    return [...pack.profile.capabilities];
 }
 
-export function packHasCapability(
-    identifier,
-    capability
-) {
-    const pack =
-        getPack(identifier);
+export function packHasCapability(identifier, capability) {
+    const pack = getPack(identifier);
 
-    if (
-        !pack ||
-        !pack.enabled
-    ) {
+    if (!pack || !pack.enabled) {
         return false;
     }
 
-    return hasCapability(
-        pack.profile,
-        capability
+    return pack.profile.capabilities.includes(
+        normalizeCapability(capability)
     );
 }
 
-export function setPackEnabled(
-    identifier,
-    enabled
-) {
-    const pack =
-        getPack(identifier);
+export function setPackEnabled(identifier, enabled) {
+    const pack = getPack(identifier);
 
     if (!pack) {
         return false;
     }
 
-    const value =
-        normalizeBoolean(
-            enabled,
-            true
-        );
+    const value = Boolean(enabled);
 
-    if (
-        pack.enabled === value
-    ) {
+    if (pack.enabled === value) {
         return true;
     }
 
     pack.enabled = value;
-
     bumpRevision();
 
     return true;
 }
 
-export function isPackEnabled(
-    identifier
-) {
-    const pack =
-        getPack(identifier);
+export function isPackEnabled(identifier) {
+    const pack = getPack(identifier);
 
-    return Boolean(
-        pack &&
-        pack.enabled === true
-    );
+    return Boolean(pack?.enabled);
 }
 
-export function setPackPriority(
-    identifier,
-    priority
-) {
-    const pack =
-        getPack(identifier);
+export function addPackConflict(identifier, conflict) {
+    const pack = getPack(identifier);
+    const value = normalizeString(conflict);
+
+    if (!pack || !value) {
+        return false;
+    }
+
+    if (!pack.profile.conflicts.includes(value)) {
+        pack.profile.conflicts.push(value);
+        bumpRevision();
+    }
+
+    return true;
+}
+
+export function removePackConflict(identifier, conflict) {
+    const pack = getPack(identifier);
 
     if (!pack) {
         return false;
     }
 
-    const value =
-        normalizeNumber(
-            priority,
-            0
-        );
+    const index = pack.profile.conflicts.indexOf(conflict);
 
-    if (
-        pack.profile.priority ===
-        value
-    ) {
-        return true;
+    if (index === -1) {
+        return false;
     }
 
-    pack.profile.priority =
-        value;
-
+    pack.profile.conflicts.splice(index, 1);
     bumpRevision();
 
     return true;
 }
 
-export function getPackPriority(
-    identifier
-) {
-    const pack =
-        getPack(identifier);
+export function addPackCapability(identifier, capability) {
+    const pack = getPack(identifier);
+    const value = normalizeCapability(capability);
 
-    return pack?.profile?.priority ??
-        0;
-}
-
-export function addPackConflict(
-    identifier,
-    conflict
-) {
-    const pack =
-        getPack(identifier);
-
-    const value =
-        normalizeString(conflict);
-
-    if (
-        !pack ||
-        !value
-    ) {
+    if (!pack || !value) {
         return false;
     }
 
-    if (
-        !pack.profile.conflicts.includes(
-            value
-        )
-    ) {
-        pack.profile.conflicts.push(
-            value
-        );
-
+    if (!pack.profile.capabilities.includes(value)) {
+        pack.profile.capabilities.push(value);
         bumpRevision();
     }
 
     return true;
 }
 
-export function removePackConflict(
-    identifier,
-    conflict
-) {
-    const pack =
-        getPack(identifier);
+export function removePackCapability(identifier, capability) {
+    const pack = getPack(identifier);
 
     if (!pack) {
         return false;
     }
 
-    const removed =
-        removeFromArray(
-            pack.profile.conflicts,
-            conflict
-        );
+    const index = pack.profile.capabilities.indexOf(capability);
 
-    if (removed) {
-        bumpRevision();
-    }
-
-    return removed;
-}
-
-export function addPackCapability(
-    identifier,
-    capability
-) {
-    const pack =
-        getPack(identifier);
-
-    const value =
-        normalizeCapability(
-            capability
-        );
-
-    if (
-        !pack ||
-        !value
-    ) {
+    if (index === -1) {
         return false;
     }
 
-    if (
-        !pack.profile.capabilities.includes(
-            value
-        )
-    ) {
-        pack.profile.capabilities.push(
-            value
-        );
-
-        bumpRevision();
-    }
+    pack.profile.capabilities.splice(index, 1);
+    bumpRevision();
 
     return true;
 }
 
-export function removePackCapability(
-    identifier,
-    capability
-) {
-    const pack =
-        getPack(identifier);
-
-    if (!pack) {
-        return false;
-    }
-
-    const removed =
-        removeFromArray(
-            pack.profile.capabilities,
-            capability
-        );
-
-    if (removed) {
-        bumpRevision();
-    }
-
-    return removed;
-}
-
-export function addPackWarning(
-    identifier,
-    warning
-) {
-    const pack =
-        getPack(identifier);
-
-    const value =
-        normalizeString(warning);
-
-    if (
-        !pack ||
-        !value
-    ) {
-        return false;
-    }
-
-    if (
-        !pack.profile.notes.includes(
-            value
-        )
-    ) {
-        pack.profile.notes.push(
-            value
-        );
-
-        bumpRevision();
-    }
-
-    return true;
-}
-
-export function removePackWarning(
-    identifier,
-    warning
-) {
-    const pack =
-        getPack(identifier);
-
-    if (!pack) {
-        return false;
-    }
-
-    const removed =
-        removeFromArray(
-            pack.profile.notes,
-            warning
-        );
-
-    if (removed) {
-        bumpRevision();
-    }
-
-    return removed;
+export function getRuntimeCapabilitiesSafe() {
+    return getRuntimeCapabilities();
 }
 
 export function getRuntimeCapabilities() {
-    return detectRuntimeCapabilities();
+    return getRuntimeCapabilitiesInternal();
 }
 
-export function runtimeSupports(
-    capability
-) {
-    return detectRuntimeCapabilities()
-        .includes(
-            capability
-        );
+function getRuntimeCapabilitiesInternal() {
+    return getRuntimeCapabilities();
+}
+
+export function runtimeSupports(capability) {
+    return getRuntimeCapabilitiesInternal().includes(
+        normalizeCapability(capability)
+    );
 }
 
 export function getCompatibilitySnapshot() {
-    const cached =
-        getCachedCompatibility(
-            "global"
-        );
-
-    if (cached) {
-        return cached;
-    }
-
-    const result =
-        calculateCompatibility();
-
-    cacheCompatibility(
-        "global",
-        result
-    );
-
-    return clone(result);
+    return calculateCompatibility();
 }
 
 export function getCompatibilityStatus() {
-    return getCompatibilitySnapshot()
-        .status;
+    return getCompatibilitySnapshot().status;
 }
 
 export function isCompatible() {
-    const status =
-        getCompatibilityStatus();
+    const status = getCompatibilityStatus();
 
     return (
         status === PACK_STATUS.COMPATIBLE ||
@@ -1186,85 +520,44 @@ export function isCompatible() {
 }
 
 export function hasCompatibilityConflicts() {
-    return (
-        getCompatibilityConflicts()
-            .length > 0
-    );
+    return getCompatibilityConflicts().length > 0;
 }
 
 export function getCompatibilityConflicts() {
-    return [
-        ...getCompatibilitySnapshot()
-            .conflicts
-    ];
+    return getCompatibilitySnapshot().conflicts;
 }
 
 export function getCompatibilityWarnings() {
-    return [
-        ...getCompatibilitySnapshot()
-            .warnings
-    ];
+    return getCompatibilitySnapshot().warnings;
 }
 
-export function getPlayerCompatibility(
-    player
-) {
-    if (!player) {
-        return null;
-    }
-
-    const key =
-        getPlayerKey(player);
+export function getPlayerCompatibility(player) {
+    const key = getPlayerId(player);
 
     if (!key) {
         return null;
     }
 
-    const cached =
-        getCachedCompatibility(
-            `player:${key}`
-        );
+    const profile = getPlayerProfile(player);
+    const global = getCompatibilitySnapshot();
 
-    if (cached) {
-        return cached;
-    }
-
-    const profile =
-        getPlayerProfile(player);
-
-    const global =
-        getCompatibilitySnapshot();
-
-    if (!profile) {
-        return clone({
-            status: global.status,
-            capabilities: global.capabilities,
-            conflicts: global.conflicts,
-            warnings: global.warnings
-        });
-    }
-
-    const result = {
+    return {
         status:
-            profile.status ===
-                PACK_STATUS.UNKNOWN
+            profile.status === PACK_STATUS.UNKNOWN
                 ? global.status
                 : profile.status,
-
         capabilities: [
             ...new Set([
                 ...global.capabilities,
                 ...profile.capabilities
             ])
         ],
-
         conflicts: [
             ...new Set([
                 ...global.conflicts,
                 ...profile.conflicts
             ])
         ],
-
         warnings: [
             ...new Set([
                 ...global.warnings,
@@ -1272,339 +565,136 @@ export function getPlayerCompatibility(
             ])
         ]
     };
-
-    cacheCompatibility(
-        `player:${key}`,
-        result
-    );
-
-    return clone(result);
 }
 
-export function updatePlayerCompatibility(
-    player,
-    profile
-) {
-    const result =
-        updatePlayerProfile(
-            player,
-            profile
-        );
+export function updatePlayerCompatibility(player, profile = {}) {
+    const current = getPlayerProfile(player);
 
-    if (result) {
-        bumpRevision();
-    }
-
-    return result;
-}
-
-export function setPlayerCompatibilityStatus(
-    player,
-    status
-) {
-    if (!player) {
+    if (!current) {
         return false;
     }
 
-    const normalized =
-        normalizePlayerStatus(
-            status
-        );
-
-    if (
-        normalized ===
-        PACK_STATUS.UNKNOWN
-    ) {
-        return false;
+    if (profile.status !== undefined) {
+        current.status = normalizeStatus(profile.status);
     }
 
-    return updatePlayerCompatibility(
-        player,
-        {
-            status: normalized
-        }
-    );
-}
-
-export function addPlayerCapability(
-    player,
-    capability
-) {
-    const value =
-        normalizeCapability(
-            capability
-        );
-
-    if (!player || !value) {
-        return false;
+    if (profile.capabilities !== undefined) {
+        current.capabilities = [
+            ...new Set([
+                ...current.capabilities,
+                ...normalizeArray(profile.capabilities)
+            ])
+        ];
     }
 
-    const profile =
-        getPlayerProfile(player);
-
-    if (!profile) {
-        return false;
+    if (profile.conflicts !== undefined) {
+        current.conflicts = [
+            ...new Set([
+                ...current.conflicts,
+                ...normalizeArray(profile.conflicts)
+            ])
+        ];
     }
 
-    if (
-        profile.capabilities.includes(
-            value
-        )
-    ) {
-        return true;
+    if (profile.warnings !== undefined) {
+        current.warnings = [
+            ...new Set([
+                ...current.warnings,
+                ...normalizeArray(profile.warnings)
+            ])
+        ];
     }
-
-    profile.capabilities.push(
-        value
-    );
-
-    profile.lastUpdated =
-        Date.now();
 
     bumpRevision();
 
     return true;
 }
 
-export function removePlayerCapability(
-    player,
-    capability
-) {
-    const profile =
-        getPlayerProfile(player);
-
-    if (!profile) {
-        return false;
-    }
-
-    const removed =
-        removeFromArray(
-            profile.capabilities,
-            capability
-        );
-
-    if (removed) {
-        profile.lastUpdated =
-            Date.now();
-
-        bumpRevision();
-    }
-
-    return removed;
+export function setPlayerCompatibilityStatus(player, status) {
+    return updatePlayerCompatibility(player, {
+        status
+    });
 }
 
-export function addPlayerConflict(
-    player,
-    conflict
-) {
-    const value =
-        normalizeString(conflict);
+export function addPlayerCapability(player, capability) {
+    return updatePlayerCompatibility(player, {
+        capabilities: [capability]
+    });
+}
 
-    if (!player || !value) {
-        return false;
-    }
-
-    const profile =
-        getPlayerProfile(player);
+export function removePlayerCapability(player, capability) {
+    const profile = getPlayerProfile(player);
 
     if (!profile) {
         return false;
     }
 
-    if (
-        profile.conflicts.includes(
-            value
-        )
-    ) {
-        return true;
+    const index = profile.capabilities.indexOf(capability);
+
+    if (index === -1) {
+        return false;
     }
 
-    profile.conflicts.push(
-        value
-    );
-
-    profile.lastUpdated =
-        Date.now();
-
+    profile.capabilities.splice(index, 1);
     bumpRevision();
 
     return true;
 }
 
-export function removePlayerConflict(
-    player,
-    conflict
-) {
-    const profile =
-        getPlayerProfile(player);
-
-    if (!profile) {
-        return false;
-    }
-
-    const removed =
-        removeFromArray(
-            profile.conflicts,
-            conflict
-        );
-
-    if (removed) {
-        profile.lastUpdated =
-            Date.now();
-
-        bumpRevision();
-    }
-
-    return removed;
+export function addPlayerConflict(player, conflict) {
+    return updatePlayerCompatibility(player, {
+        conflicts: [conflict]
+    });
 }
 
-export function clearPlayerConflicts(
-    player
-) {
-    const profile =
-        getPlayerProfile(player);
+export function removePlayerConflict(player, conflict) {
+    const profile = getPlayerProfile(player);
 
     if (!profile) {
         return false;
     }
 
-    if (
-        profile.conflicts.length === 0
-    ) {
-        return true;
+    const index = profile.conflicts.indexOf(conflict);
+
+    if (index === -1) {
+        return false;
+    }
+
+    profile.conflicts.splice(index, 1);
+    bumpRevision();
+
+    return true;
+}
+
+export function clearPlayerConflicts(player) {
+    const profile = getPlayerProfile(player);
+
+    if (!profile) {
+        return false;
     }
 
     profile.conflicts = [];
-    profile.lastUpdated =
-        Date.now();
-
     bumpRevision();
 
     return true;
 }
 
-export function addPlayerWarning(
-    player,
-    warning
-) {
-    const value =
-        normalizeString(warning);
-
-    if (!player || !value) {
-        return false;
-    }
-
-    const profile =
-        getPlayerProfile(player);
-
-    if (!profile) {
-        return false;
-    }
-
-    if (
-        profile.warnings.includes(
-            value
-        )
-    ) {
-        return true;
-    }
-
-    profile.warnings.push(
-        value
-    );
-
-    profile.lastUpdated =
-        Date.now();
-
-    bumpRevision();
-
-    return true;
-}
-
-export function clearPlayerWarnings(
-    player
-) {
-    const profile =
-        getPlayerProfile(player);
-
-    if (!profile) {
-        return false;
-    }
-
-    if (
-        profile.warnings.length === 0
-    ) {
-        return true;
-    }
-
-    profile.warnings = [];
-    profile.lastUpdated =
-        Date.now();
-
-    bumpRevision();
-
-    return true;
-}
-
-export function playerSupports(
-    player,
-    capability
-) {
-    const profile =
-        getPlayerCompatibility(
-            player
-        );
-
-    return Boolean(
-        profile &&
-        profile.capabilities.includes(
-            capability
-        )
-    );
-}
-
-export function playerHasConflicts(
-    player
-) {
-    const profile =
-        getPlayerCompatibility(
-            player
-        );
-
-    return Boolean(
-        profile &&
-        profile.conflicts.length > 0
-    );
-}
-
-export function getRecommendedRenderStrategy(
-    player = null
-) {
-    const compatibility =
-        player
-            ? getPlayerCompatibility(player)
-            : getCompatibilitySnapshot();
+export function getRecommendedRenderStrategy(player = null) {
+    const compatibility = player
+        ? getPlayerCompatibility(player)
+        : getCompatibilitySnapshot();
 
     if (!compatibility) {
         return "vanilla";
     }
 
-    if (
-        compatibility.status ===
-        PACK_STATUS.INCOMPATIBLE
-    ) {
+    if (compatibility.status === PACK_STATUS.INCOMPATIBLE) {
         return "vanilla";
     }
 
     if (
+        compatibility.status === PACK_STATUS.LIMITED ||
         compatibility.conflicts.length > 0
-    ) {
-        return "minimal";
-    }
-
-    if (
-        compatibility.status ===
-        PACK_STATUS.LIMITED
     ) {
         return "minimal";
     }
@@ -1612,98 +702,49 @@ export function getRecommendedRenderStrategy(
     return "vantage";
 }
 
-export function getRecommendedAnimationStrategy(
-    player = null
-) {
-    const compatibility =
-        player
-            ? getPlayerCompatibility(player)
-            : getCompatibilitySnapshot();
-
-    if (!compatibility) {
-        return "vanilla";
-    }
-
-    if (
-        compatibility.status ===
-        PACK_STATUS.INCOMPATIBLE
-    ) {
-        return "vanilla";
-    }
-
-    if (
-        compatibility.conflicts.length > 0
-    ) {
-        return "minimal";
-    }
-
-    if (
-        compatibility.status ===
-        PACK_STATUS.LIMITED
-    ) {
-        return "minimal";
-    }
-
-    return "vantage";
+export function getRecommendedAnimationStrategy(player = null) {
+    return getRecommendedRenderStrategy(player);
 }
 
-export function shouldUseVantageRendering(
-    player = null
-) {
-    return (
-        getRecommendedRenderStrategy(
-            player
-        ) === "vantage"
+export function shouldUseVantageRendering(player = null) {
+    return getRecommendedRenderStrategy(player) === "vantage";
+}
+
+export function shouldUseMinimalRendering(player = null) {
+    return getRecommendedRenderStrategy(player) === "minimal";
+}
+
+export function shouldUseVanillaRendering(player = null) {
+    return getRecommendedRenderStrategy(player) === "vanilla";
+}
+
+export function shouldUseVantageAnimations(player = null) {
+    return getRecommendedAnimationStrategy(player) === "vantage";
+}
+
+export function shouldUseMinimalAnimations(player = null) {
+    return getRecommendedAnimationStrategy(player) === "minimal";
+}
+
+export function shouldUseVanillaAnimations(player = null) {
+    return getRecommendedAnimationStrategy(player) === "vanilla";
+}
+
+export function playerSupports(player, capability) {
+    const compatibility = getPlayerCompatibility(player);
+
+    return Boolean(
+        compatibility?.capabilities.includes(
+            normalizeCapability(capability)
+        )
     );
 }
 
-export function shouldUseMinimalRendering(
-    player = null
-) {
-    return (
-        getRecommendedRenderStrategy(
-            player
-        ) === "minimal"
-    );
-}
+export function playerHasConflicts(player) {
+    const compatibility = getPlayerCompatibility(player);
 
-export function shouldUseVanillaRendering(
-    player = null
-) {
-    return (
-        getRecommendedRenderStrategy(
-            player
-        ) === "vanilla"
-    );
-}
-
-export function shouldUseVantageAnimations(
-    player = null
-) {
-    return (
-        getRecommendedAnimationStrategy(
-            player
-        ) === "vantage"
-    );
-}
-
-export function shouldUseMinimalAnimations(
-    player = null
-) {
-    return (
-        getRecommendedAnimationStrategy(
-            player
-        ) === "minimal"
-    );
-}
-
-export function shouldUseVanillaAnimations(
-    player = null
-) {
-    return (
-        getRecommendedAnimationStrategy(
-            player
-        ) === "vanilla"
+    return Boolean(
+        compatibility?.conflicts.length
     );
 }
 
@@ -1733,37 +774,12 @@ export function refresh() {
     return getCompatibilitySnapshot();
 }
 
-export function clear() {
-    packs.clear();
-    compatibilityCache.clear();
-
-    initialized = false;
-
-    revision++;
-
-    return true;
-}
-
-export function clearPlayer(
-    player
-) {
+export function clearPlayer(player) {
     if (!player) {
         return false;
     }
 
-    const removed =
-        playerProfiles.delete(
-            player
-        );
-
-    const key =
-        getPlayerKey(player);
-
-    if (key) {
-        compatibilityCache.delete(
-            `player:${key}`
-        );
-    }
+    const removed = playerProfiles.delete(player);
 
     if (removed) {
         bumpRevision();
@@ -1772,11 +788,16 @@ export function clearPlayer(
     return removed;
 }
 
-export function getPlayerProfileSnapshot(
-    player
-) {
-    const profile =
-        getPlayerProfile(player);
+export function clear() {
+    packs.clear();
+    revision++;
+    initialized = false;
+
+    return true;
+}
+
+export function getPlayerProfileSnapshot(player) {
+    const profile = getPlayerProfile(player);
 
     return profile
         ? clone(profile)
@@ -1786,16 +807,9 @@ export function getPlayerProfileSnapshot(
 export function getSnapshot() {
     return {
         initialized,
-
         revision,
-
-        runtimeCapabilities:
-            detectRuntimeCapabilities(),
-
-        compatibility:
-            getCompatibilitySnapshot(),
-
-        packs:
-            getRegisteredPacks()
+        runtimeCapabilities: getRuntimeCapabilitiesInternal(),
+        compatibility: getCompatibilitySnapshot(),
+        packs: getRegisteredPacks()
     };
 }

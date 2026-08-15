@@ -16,7 +16,6 @@ const BODY_PARTS = Object.freeze([
 
 const VISIBILITY_MODES = Object.freeze({
     FULL: "full",
-    VANILLA: "vanilla",
     CUSTOM: "custom",
     HIDDEN: "hidden"
 });
@@ -39,11 +38,13 @@ const PART_INDEX = Object.freeze({
 });
 
 const DEFAULTS = Object.freeze({
-    mode: DEFAULT_VISIBILITY_CONFIG.mode ?? VISIBILITY_MODES.FULL,
-
     enabled:
         DEFAULT_VISIBILITY_CONFIG.enabled ??
         true,
+
+    mode:
+        DEFAULT_VISIBILITY_CONFIG.mode ??
+        VISIBILITY_MODES.FULL,
 
     firstPersonOnly:
         DEFAULT_VISIBILITY_CONFIG.firstPersonOnly ??
@@ -93,57 +94,134 @@ const DEFAULTS = Object.freeze({
 const states = new WeakMap();
 
 function isValidPlayer(player) {
-    return Boolean(
-        player &&
-        typeof player.isValid === "function" &&
-        player.isValid()
-    );
+    if (!player) {
+        return false;
+    }
+
+    try {
+        return typeof player.isValid !== "function" ||
+            player.isValid();
+    } catch {
+        return false;
+    }
+}
+
+function normalizeBoolean(value, fallback) {
+    return typeof value === "boolean"
+        ? value
+        : fallback;
+}
+
+function normalizeMode(mode) {
+    if (
+        mode === VISIBILITY_MODES.FULL ||
+        mode === VISIBILITY_MODES.CUSTOM ||
+        mode === VISIBILITY_MODES.HIDDEN
+    ) {
+        return mode;
+    }
+
+    return VISIBILITY_MODES.FULL;
+}
+
+function normalizeCameraMode(mode) {
+    return mode === CAMERA_MODES.THIRD_PERSON
+        ? CAMERA_MODES.THIRD_PERSON
+        : CAMERA_MODES.FIRST_PERSON;
+}
+
+function createParts() {
+    return {
+        head: DEFAULTS.head,
+        body: DEFAULTS.body,
+
+        left_arm:
+            DEFAULTS.left_arm,
+
+        right_arm:
+            DEFAULTS.right_arm,
+
+        left_leg:
+            DEFAULTS.left_leg,
+
+        right_leg:
+            DEFAULTS.right_leg,
+
+        cape:
+            DEFAULTS.cape,
+
+        armor:
+            DEFAULTS.armor,
+
+        held_item:
+            DEFAULTS.held_item
+    };
+}
+
+function cloneParts(parts) {
+    return {
+        head: parts.head === true,
+        body: parts.body === true,
+
+        left_arm:
+            parts.left_arm === true,
+
+        right_arm:
+            parts.right_arm === true,
+
+        left_leg:
+            parts.left_leg === true,
+
+        right_leg:
+            parts.right_leg === true,
+
+        cape:
+            parts.cape === true,
+
+        armor:
+            parts.armor === true,
+
+        held_item:
+            parts.held_item === true
+    };
 }
 
 function createState() {
     return {
-        mode: DEFAULTS.mode,
-
         enabled: DEFAULTS.enabled,
 
-        firstPersonOnly: DEFAULTS.firstPersonOnly,
-        thirdPersonOnly: DEFAULTS.thirdPersonOnly,
+        mode:
+            normalizeMode(
+                DEFAULTS.mode
+            ),
 
-        parts: {
-            head: DEFAULTS.head,
-            body: DEFAULTS.body,
-            left_arm: DEFAULTS.left_arm,
-            right_arm: DEFAULTS.right_arm,
-            left_leg: DEFAULTS.left_leg,
-            right_leg: DEFAULTS.right_leg,
-            cape: DEFAULTS.cape,
-            armor: DEFAULTS.armor,
-            held_item: DEFAULTS.held_item
-        },
+        firstPersonOnly:
+            DEFAULTS.firstPersonOnly,
 
-        hideHead: false,
-        hideBody: false,
-        hideArms: false,
-        hideLegs: false,
-        hideCape: false,
-        hideArmor: false,
-        hideHeldItem: false,
+        thirdPersonOnly:
+            DEFAULTS.thirdPersonOnly,
 
-        cameraMode: CAMERA_MODES.FIRST_PERSON,
+        cameraMode:
+            CAMERA_MODES.FIRST_PERSON,
 
         firstPerson: true,
         thirdPerson: false,
 
+        parts: createParts(),
+
         effectiveParts: {
-            head: true,
-            body: true,
-            left_arm: true,
-            right_arm: true,
-            left_leg: true,
-            right_leg: true,
-            cape: true,
-            armor: true,
-            held_item: true
+            head: false,
+            body: false,
+
+            left_arm: false,
+            right_arm: false,
+
+            left_leg: false,
+            right_leg: false,
+
+            cape: false,
+            armor: false,
+            held_item: false
         },
 
         visibilityMask: 0,
@@ -154,7 +232,7 @@ function createState() {
     };
 }
 
-function getInternalState(player) {
+function getState(player) {
     let state = states.get(player);
 
     if (!state) {
@@ -166,64 +244,16 @@ function getInternalState(player) {
     return state;
 }
 
-function normalizeBoolean(value, fallback) {
-    return typeof value === "boolean"
-        ? value
-        : fallback;
-}
-
-function normalizeMode(mode) {
-    switch (mode) {
-        case VISIBILITY_MODES.FULL:
-        case VISIBILITY_MODES.VANILLA:
-        case VISIBILITY_MODES.CUSTOM:
-        case VISIBILITY_MODES.HIDDEN:
-            return mode;
-
-        default:
-            return DEFAULTS.mode;
-    }
-}
-
-function normalizeCameraMode(mode) {
-    return mode === CAMERA_MODES.THIRD_PERSON
-        ? CAMERA_MODES.THIRD_PERSON
-        : CAMERA_MODES.FIRST_PERSON;
-}
-
-function cloneParts(parts) {
-    return {
-        head: parts.head === true,
-        body: parts.body === true,
-        left_arm: parts.left_arm === true,
-        right_arm: parts.right_arm === true,
-        left_leg: parts.left_leg === true,
-        right_leg: parts.right_leg === true,
-        cape: parts.cape === true,
-        armor: parts.armor === true,
-        held_item: parts.held_item === true
-    };
-}
-
 function setChanged(state) {
     state.changed = true;
     state.revision++;
 }
 
-function setPart(state, part, visible) {
-    if (!Object.prototype.hasOwnProperty.call(state.parts, part)) {
-        return false;
-    }
-
-    const value = Boolean(visible);
-
-    if (state.parts[part] === value) {
-        return false;
-    }
-
-    state.parts[part] = value;
-
-    return true;
+function isValidPart(part) {
+    return Object.prototype.hasOwnProperty.call(
+        PART_INDEX,
+        part
+    );
 }
 
 function resetEffectiveParts(state) {
@@ -232,17 +262,12 @@ function resetEffectiveParts(state) {
     }
 }
 
-function applyMode(state) {
+function applyVisibilityMode(state) {
     switch (state.mode) {
         case VISIBILITY_MODES.FULL:
-        case VISIBILITY_MODES.VANILLA:
             for (const part of BODY_PARTS) {
                 state.effectiveParts[part] = true;
             }
-            break;
-
-        case VISIBILITY_MODES.HIDDEN:
-            resetEffectiveParts(state);
             break;
 
         case VISIBILITY_MODES.CUSTOM:
@@ -252,41 +277,10 @@ function applyMode(state) {
             }
             break;
 
+        case VISIBILITY_MODES.HIDDEN:
         default:
             resetEffectiveParts(state);
             break;
-    }
-}
-
-function applyGroupRules(state) {
-    if (state.hideHead) {
-        state.effectiveParts.head = false;
-    }
-
-    if (state.hideBody) {
-        state.effectiveParts.body = false;
-    }
-
-    if (state.hideArms) {
-        state.effectiveParts.left_arm = false;
-        state.effectiveParts.right_arm = false;
-    }
-
-    if (state.hideLegs) {
-        state.effectiveParts.left_leg = false;
-        state.effectiveParts.right_leg = false;
-    }
-
-    if (state.hideCape) {
-        state.effectiveParts.cape = false;
-    }
-
-    if (state.hideArmor) {
-        state.effectiveParts.armor = false;
-    }
-
-    if (state.hideHeldItem) {
-        state.effectiveParts.held_item = false;
     }
 }
 
@@ -321,11 +315,11 @@ function applyEnabledRule(state) {
     }
 }
 
-function calculateVisibilityMask(state) {
+function calculateMask(state) {
     let mask = 0;
 
     for (const part of BODY_PARTS) {
-        if (state.effectiveParts[part] === true) {
+        if (state.effectiveParts[part]) {
             mask |= 1 << PART_INDEX[part];
         }
     }
@@ -334,39 +328,53 @@ function calculateVisibilityMask(state) {
 }
 
 function rebuild(state) {
-    applyMode(state);
-    applyGroupRules(state);
+    applyVisibilityMode(state);
     applyCameraRules(state);
     applyEnabledRule(state);
 
     state.visibilityMask =
-        calculateVisibilityMask(state);
+        calculateMask(state);
 }
 
 function applyOptions(state, options) {
-    if (!options || typeof options !== "object") {
+    if (
+        !options ||
+        typeof options !== "object" ||
+        Array.isArray(options)
+    ) {
         return false;
     }
 
     let changed = false;
 
-    if (Object.prototype.hasOwnProperty.call(options, "mode")) {
-        const mode = normalizeMode(options.mode);
-
-        if (state.mode !== mode) {
-            state.mode = mode;
-            changed = true;
-        }
-    }
-
-    if (Object.prototype.hasOwnProperty.call(options, "enabled")) {
-        const enabled = normalizeBoolean(
+    if (
+        Object.prototype.hasOwnProperty.call(
+            options,
+            "enabled"
+        )
+    ) {
+        const value = normalizeBoolean(
             options.enabled,
             state.enabled
         );
 
-        if (state.enabled !== enabled) {
-            state.enabled = enabled;
+        if (value !== state.enabled) {
+            state.enabled = value;
+            changed = true;
+        }
+    }
+
+    if (
+        Object.prototype.hasOwnProperty.call(
+            options,
+            "mode"
+        )
+    ) {
+        const value =
+            normalizeMode(options.mode);
+
+        if (value !== state.mode) {
+            state.mode = value;
             changed = true;
         }
     }
@@ -382,7 +390,7 @@ function applyOptions(state, options) {
             state.firstPersonOnly
         );
 
-        if (state.firstPersonOnly !== value) {
+        if (value !== state.firstPersonOnly) {
             state.firstPersonOnly = value;
             changed = true;
         }
@@ -399,39 +407,8 @@ function applyOptions(state, options) {
             state.thirdPersonOnly
         );
 
-        if (state.thirdPersonOnly !== value) {
+        if (value !== state.thirdPersonOnly) {
             state.thirdPersonOnly = value;
-            changed = true;
-        }
-    }
-
-    const groupOptions = [
-        "hideHead",
-        "hideBody",
-        "hideArms",
-        "hideLegs",
-        "hideCape",
-        "hideArmor",
-        "hideHeldItem"
-    ];
-
-    for (const property of groupOptions) {
-        if (
-            !Object.prototype.hasOwnProperty.call(
-                options,
-                property
-            )
-        ) {
-            continue;
-        }
-
-        const value = normalizeBoolean(
-            options[property],
-            state[property]
-        );
-
-        if (state[property] !== value) {
-            state[property] = value;
             changed = true;
         }
     }
@@ -464,53 +441,40 @@ function applyOptions(state, options) {
     return changed;
 }
 
-function getPartVisibility(state, part) {
-    if (!Object.prototype.hasOwnProperty.call(
-        PART_INDEX,
-        part
-    )) {
-        return false;
-    }
-
-    return state.effectiveParts[part] === true;
-}
-
-function getRawParts(state) {
-    return cloneParts(state.parts);
-}
-
-function getEffectiveParts(state) {
-    return cloneParts(state.effectiveParts);
-}
-
-function updateCameraFlags(state, cameraMode) {
-    const normalized =
+function updateCamera(state, cameraMode) {
+    const mode =
         normalizeCameraMode(cameraMode);
 
     const firstPerson =
-        normalized === CAMERA_MODES.FIRST_PERSON;
+        mode === CAMERA_MODES.FIRST_PERSON;
 
     const thirdPerson =
-        normalized === CAMERA_MODES.THIRD_PERSON;
+        !firstPerson;
 
     const changed =
-        state.cameraMode !== normalized ||
+        state.cameraMode !== mode ||
         state.firstPerson !== firstPerson ||
         state.thirdPerson !== thirdPerson;
 
-    state.cameraMode = normalized;
+    state.cameraMode = mode;
     state.firstPerson = firstPerson;
     state.thirdPerson = thirdPerson;
 
     return changed;
 }
 
-export function initialize(player, options = {}) {
+export function initialize(
+    player,
+    options = {}
+) {
     if (!isValidPlayer(player)) {
         return false;
     }
 
-    const state = getInternalState(player);
+    const state = getState(player);
+
+    const wasInitialized =
+        state.initialized;
 
     const changed =
         applyOptions(state, options);
@@ -519,11 +483,11 @@ export function initialize(player, options = {}) {
 
     state.initialized = true;
 
-    if (changed || !state.initialized) {
+    if (
+        changed ||
+        !wasInitialized
+    ) {
         setChanged(state);
-    } else {
-        state.changed = true;
-        state.revision++;
     }
 
     return true;
@@ -537,20 +501,27 @@ export function update(
         return false;
     }
 
-    const state = getInternalState(player);
-
-    const cameraChanged =
-        updateCameraFlags(state, cameraMode);
+    const state = getState(player);
 
     const previousMask =
         state.visibilityMask;
 
+    const cameraChanged =
+        updateCamera(
+            state,
+            cameraMode
+        );
+
     rebuild(state);
 
     const visibilityChanged =
-        previousMask !== state.visibilityMask;
+        previousMask !==
+        state.visibilityMask;
 
-    if (cameraChanged || visibilityChanged) {
+    if (
+        cameraChanged ||
+        visibilityChanged
+    ) {
         setChanged(state);
     }
 
@@ -559,12 +530,15 @@ export function update(
     return true;
 }
 
-export function setEnabled(player, enabled) {
+export function setEnabled(
+    player,
+    enabled
+) {
     if (!isValidPlayer(player)) {
         return false;
     }
 
-    const state = getInternalState(player);
+    const state = getState(player);
     const value = Boolean(enabled);
 
     if (state.enabled === value) {
@@ -584,7 +558,7 @@ export function isEnabled(player) {
         return false;
     }
 
-    return getInternalState(player).enabled;
+    return getState(player).enabled;
 }
 
 export function setMode(player, mode) {
@@ -592,14 +566,14 @@ export function setMode(player, mode) {
         return false;
     }
 
-    const state = getInternalState(player);
-    const normalized = normalizeMode(mode);
+    const state = getState(player);
+    const value = normalizeMode(mode);
 
-    if (state.mode === normalized) {
+    if (state.mode === value) {
         return true;
     }
 
-    state.mode = normalized;
+    state.mode = value;
 
     rebuild(state);
     setChanged(state);
@@ -612,7 +586,7 @@ export function getMode(player) {
         return null;
     }
 
-    return getInternalState(player).mode;
+    return getState(player).mode;
 }
 
 export function setPartVisible(
@@ -622,21 +596,20 @@ export function setPartVisible(
 ) {
     if (
         !isValidPlayer(player) ||
-        !Object.prototype.hasOwnProperty.call(
-            PART_INDEX,
-            part
-        )
+        !isValidPart(part)
     ) {
         return false;
     }
 
-    const state = getInternalState(player);
-    const changed = setPart(
-        state,
-        part,
-        visible
-    );
+    const state = getState(player);
+    const value = Boolean(visible);
 
+    const changed =
+        state.parts[part] !== value ||
+        state.mode !==
+        VISIBILITY_MODES.CUSTOM;
+
+    state.parts[part] = value;
     state.mode = VISIBILITY_MODES.CUSTOM;
 
     rebuild(state);
@@ -648,18 +621,25 @@ export function setPartVisible(
     return true;
 }
 
-export function isPartVisible(player, part) {
-    if (!isValidPlayer(player)) {
+export function isPartVisible(
+    player,
+    part
+) {
+    if (
+        !isValidPlayer(player) ||
+        !isValidPart(part)
+    ) {
         return false;
     }
 
-    return getPartVisibility(
-        getInternalState(player),
-        part
-    );
+    return getState(player)
+        .effectiveParts[part];
 }
 
-export function setHeadVisible(player, visible) {
+export function setHeadVisible(
+    player,
+    visible
+) {
     return setPartVisible(
         player,
         "head",
@@ -667,7 +647,10 @@ export function setHeadVisible(player, visible) {
     );
 }
 
-export function setBodyVisible(player, visible) {
+export function setBodyVisible(
+    player,
+    visible
+) {
     return setPartVisible(
         player,
         "body",
@@ -675,18 +658,22 @@ export function setBodyVisible(player, visible) {
     );
 }
 
-export function setArmsVisible(player, visible) {
+export function setArmsVisible(
+    player,
+    visible
+) {
     if (!isValidPlayer(player)) {
         return false;
     }
 
-    const state = getInternalState(player);
+    const state = getState(player);
     const value = Boolean(visible);
 
     const changed =
         state.parts.left_arm !== value ||
         state.parts.right_arm !== value ||
-        state.mode !== VISIBILITY_MODES.CUSTOM;
+        state.mode !==
+        VISIBILITY_MODES.CUSTOM;
 
     state.parts.left_arm = value;
     state.parts.right_arm = value;
@@ -701,18 +688,22 @@ export function setArmsVisible(player, visible) {
     return true;
 }
 
-export function setLegsVisible(player, visible) {
+export function setLegsVisible(
+    player,
+    visible
+) {
     if (!isValidPlayer(player)) {
         return false;
     }
 
-    const state = getInternalState(player);
+    const state = getState(player);
     const value = Boolean(visible);
 
     const changed =
         state.parts.left_leg !== value ||
         state.parts.right_leg !== value ||
-        state.mode !== VISIBILITY_MODES.CUSTOM;
+        state.mode !==
+        VISIBILITY_MODES.CUSTOM;
 
     state.parts.left_leg = value;
     state.parts.right_leg = value;
@@ -727,7 +718,10 @@ export function setLegsVisible(player, visible) {
     return true;
 }
 
-export function setCapeVisible(player, visible) {
+export function setCapeVisible(
+    player,
+    visible
+) {
     return setPartVisible(
         player,
         "cape",
@@ -735,7 +729,10 @@ export function setCapeVisible(player, visible) {
     );
 }
 
-export function setArmorVisible(player, visible) {
+export function setArmorVisible(
+    player,
+    visible
+) {
     return setPartVisible(
         player,
         "armor",
@@ -743,7 +740,10 @@ export function setArmorVisible(player, visible) {
     );
 }
 
-export function setHeldItemVisible(player, visible) {
+export function setHeldItemVisible(
+    player,
+    visible
+) {
     return setPartVisible(
         player,
         "held_item",
@@ -751,16 +751,20 @@ export function setHeldItemVisible(player, visible) {
     );
 }
 
-export function setFirstPersonOnly(player, value) {
+export function setFirstPersonOnly(
+    player,
+    value
+) {
     if (!isValidPlayer(player)) {
         return false;
     }
 
-    const state = getInternalState(player);
+    const state = getState(player);
     const normalized = Boolean(value);
 
     if (
-        state.firstPersonOnly === normalized
+        state.firstPersonOnly ===
+        normalized
     ) {
         return true;
     }
@@ -773,16 +777,20 @@ export function setFirstPersonOnly(player, value) {
     return true;
 }
 
-export function setThirdPersonOnly(player, value) {
+export function setThirdPersonOnly(
+    player,
+    value
+) {
     if (!isValidPlayer(player)) {
         return false;
     }
 
-    const state = getInternalState(player);
+    const state = getState(player);
     const normalized = Boolean(value);
 
     if (
-        state.thirdPersonOnly === normalized
+        state.thirdPersonOnly ===
+        normalized
     ) {
         return true;
     }
@@ -795,93 +803,13 @@ export function setThirdPersonOnly(player, value) {
     return true;
 }
 
-function setHideFlag(
-    player,
-    property,
-    value
-) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    const state = getInternalState(player);
-    const normalized = Boolean(value);
-
-    if (state[property] === normalized) {
-        return true;
-    }
-
-    state[property] = normalized;
-
-    rebuild(state);
-    setChanged(state);
-
-    return true;
-}
-
-export function setHideHead(player, value) {
-    return setHideFlag(
-        player,
-        "hideHead",
-        value
-    );
-}
-
-export function setHideBody(player, value) {
-    return setHideFlag(
-        player,
-        "hideBody",
-        value
-    );
-}
-
-export function setHideArms(player, value) {
-    return setHideFlag(
-        player,
-        "hideArms",
-        value
-    );
-}
-
-export function setHideLegs(player, value) {
-    return setHideFlag(
-        player,
-        "hideLegs",
-        value
-    );
-}
-
-export function setHideCape(player, value) {
-    return setHideFlag(
-        player,
-        "hideCape",
-        value
-    );
-}
-
-export function setHideArmor(player, value) {
-    return setHideFlag(
-        player,
-        "hideArmor",
-        value
-    );
-}
-
-export function setHideHeldItem(player, value) {
-    return setHideFlag(
-        player,
-        "hideHeldItem",
-        value
-    );
-}
-
 export function getVisibleParts(player) {
     if (!isValidPlayer(player)) {
         return null;
     }
 
-    return getEffectiveParts(
-        getInternalState(player)
+    return cloneParts(
+        getState(player).effectiveParts
     );
 }
 
@@ -890,8 +818,8 @@ export function getRawVisibility(player) {
         return null;
     }
 
-    return getRawParts(
-        getInternalState(player)
+    return cloneParts(
+        getState(player).parts
     );
 }
 
@@ -900,7 +828,8 @@ export function getVisibilityMask(player) {
         return 0;
     }
 
-    return getInternalState(player).visibilityMask;
+    return getState(player)
+        .visibilityMask;
 }
 
 export function isEverythingVisible(player) {
@@ -908,7 +837,7 @@ export function isEverythingVisible(player) {
         return false;
     }
 
-    return getInternalState(player).visibilityMask ===
+    return getState(player).visibilityMask ===
         (1 << BODY_PARTS.length) - 1;
 }
 
@@ -917,7 +846,31 @@ export function isEverythingHidden(player) {
         return true;
     }
 
-    return getInternalState(player).visibilityMask === 0;
+    return getState(player).visibilityMask === 0;
+}
+
+export function getCameraMode(player) {
+    if (!isValidPlayer(player)) {
+        return null;
+    }
+
+    return getState(player).cameraMode;
+}
+
+export function isFirstPerson(player) {
+    if (!isValidPlayer(player)) {
+        return false;
+    }
+
+    return getState(player).firstPerson;
+}
+
+export function isThirdPerson(player) {
+    if (!isValidPlayer(player)) {
+        return false;
+    }
+
+    return getState(player).thirdPerson;
 }
 
 export function getSnapshot(player) {
@@ -925,17 +878,21 @@ export function getSnapshot(player) {
         return null;
     }
 
-    const state = getInternalState(player);
+    const state = getState(player);
 
     return {
         enabled: state.enabled,
 
         mode: state.mode,
 
-        cameraMode: state.cameraMode,
+        cameraMode:
+            state.cameraMode,
 
-        firstPerson: state.firstPerson,
-        thirdPerson: state.thirdPerson,
+        firstPerson:
+            state.firstPerson,
+
+        thirdPerson:
+            state.thirdPerson,
 
         firstPersonOnly:
             state.firstPersonOnly,
@@ -943,17 +900,27 @@ export function getSnapshot(player) {
         thirdPersonOnly:
             state.thirdPersonOnly,
 
-        parts: getEffectiveParts(state),
+        parts:
+            cloneParts(
+                state.effectiveParts
+            ),
 
-        rawParts: getRawParts(state),
+        rawParts:
+            cloneParts(
+                state.parts
+            ),
 
-        mask: state.visibilityMask,
+        mask:
+            state.visibilityMask,
 
-        changed: state.changed,
+        changed:
+            state.changed,
 
-        revision: state.revision,
+        revision:
+            state.revision,
 
-        initialized: state.initialized
+        initialized:
+            state.initialized
     };
 }
 
@@ -962,7 +929,7 @@ export function hasChanged(player) {
         return false;
     }
 
-    return getInternalState(player).changed;
+    return getState(player).changed;
 }
 
 export function getRevision(player) {
@@ -970,7 +937,7 @@ export function getRevision(player) {
         return 0;
     }
 
-    return getInternalState(player).revision;
+    return getState(player).revision;
 }
 
 export function acknowledge(player) {
@@ -978,33 +945,9 @@ export function acknowledge(player) {
         return false;
     }
 
-    getInternalState(player).changed = false;
+    getState(player).changed = false;
 
     return true;
-}
-
-export function getCameraMode(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return getInternalState(player).cameraMode;
-}
-
-export function isFirstPerson(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player).firstPerson;
-}
-
-export function isThirdPerson(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getInternalState(player).thirdPerson;
 }
 
 export function getBodyParts() {
@@ -1012,10 +955,7 @@ export function getBodyParts() {
 }
 
 export function getPartIndex(part) {
-    if (!Object.prototype.hasOwnProperty.call(
-        PART_INDEX,
-        part
-    )) {
+    if (!isValidPart(part)) {
         return -1;
     }
 
@@ -1035,9 +975,7 @@ export function reset(player) {
         return false;
     }
 
-    states.delete(player);
-
-    return true;
+    return states.delete(player);
 }
 
 export function resetAll(players) {

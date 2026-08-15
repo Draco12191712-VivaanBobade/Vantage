@@ -6,116 +6,88 @@ import {
     isThirdPerson
 } from "./camera.js";
 
-import {
-    clamp,
-    clamp01,
-    lerp,
-    lerpAngle,
-    normalizeAngle,
-    sanitizeNumber,
-    sanitizeVector3
-} from "../utilities/math.js";
-
-import {
-    exponentialSmoothing,
-    exponentialSmoothingAngle,
-    exponentialSmoothingVector3
-} from "../utilities/interpolation.js";
-
 const DEFAULTS = Object.freeze({
-    duration: 0.2,
-    positionSmoothing: 16,
-    rotationSmoothing: 18,
+    duration: 0.15,
+    easeType: "in_out_cubic",
     minimumDuration: 0,
-    maximumDuration: 10,
-    minimumSmoothing: 0,
-    maximumSmoothing: 120
+    maximumDuration: 2
 });
 
 const states = new WeakMap();
 
 function isValidPlayer(player) {
-    return Boolean(
-        player &&
-        typeof player.isValid === "function" &&
-        player.isValid()
-    );
-}
+    if (!player) {
+        return false;
+    }
 
-function createState() {
-    return {
-        active: false,
-        from: CAMERA_MODES.FIRST_PERSON,
-        to: CAMERA_MODES.FIRST_PERSON,
-        elapsed: 0,
-        duration: DEFAULTS.duration,
-        progress: 0,
-        positionSmoothing: DEFAULTS.positionSmoothing,
-        rotationSmoothing: DEFAULTS.rotationSmoothing,
-        startOffset: {
-            x: 0,
-            y: 0,
-            z: 0
-        },
-        targetOffset: {
-            x: 0,
-            y: 0,
-            z: 0
-        },
-        currentOffset: {
-            x: 0,
-            y: 0,
-            z: 0
-        },
-        startRotation: {
-            x: 0,
-            y: 0
-        },
-        targetRotation: {
-            x: 0,
-            y: 0
-        },
-        currentRotation: {
-            x: 0,
-            y: 0
-        },
-        started: false,
-        completed: false,
-        interrupted: false
-    };
+    try {
+        return (
+            typeof player.isValid === "function" &&
+            player.isValid()
+        );
+    } catch {
+        return false;
+    }
 }
 
 function getState(player) {
+    if (!isValidPlayer(player)) {
+        return null;
+    }
+
     let state = states.get(player);
 
     if (!state) {
-        state = createState();
+        state = {
+            active: false,
+            from: getMode(player),
+            to: getMode(player),
+            elapsed: 0,
+            duration: DEFAULTS.duration,
+            progress: 1,
+            started: false,
+            completed: false,
+            interrupted: false,
+            easeType: DEFAULTS.easeType
+        };
+
         states.set(player, state);
     }
 
     return state;
 }
 
-function getPlayerRotation(player) {
-    try {
-        const rotation = player.getRotation();
+function sanitizeNumber(value, fallback) {
+    const number = Number(value);
 
-        return {
-            x: clamp(
-                sanitizeNumber(rotation?.x, 0),
-                -90,
-                90
-            ),
-            y: normalizeAngle(
-                sanitizeNumber(rotation?.y, 0)
+    return Number.isFinite(number)
+        ? number
+        : fallback;
+}
+
+function normalizeDuration(value) {
+    return Math.min(
+        DEFAULTS.maximumDuration,
+        Math.max(
+            DEFAULTS.minimumDuration,
+            sanitizeNumber(
+                value,
+                DEFAULTS.duration
             )
-        };
-    } catch {
-        return {
-            x: 0,
-            y: 0
-        };
+        )
+    );
+}
+
+function normalizeEaseType(value) {
+    if (typeof value !== "string") {
+        return DEFAULTS.easeType;
     }
+
+    const normalized = value.trim();
+
+    return normalized.length > 0
+        ? normalized
+        : DEFAULTS.easeType;
 }
 
 function normalizeMode(mode) {
@@ -129,103 +101,54 @@ function normalizeMode(mode) {
     return null;
 }
 
-function normalizeDuration(duration) {
-    return clamp(
-        sanitizeNumber(duration, DEFAULTS.duration),
-        DEFAULTS.minimumDuration,
-        DEFAULTS.maximumDuration
-    );
-}
-
-function normalizeSmoothing(value, fallback) {
-    return clamp(
-        Math.max(
-            DEFAULTS.minimumSmoothing,
-            sanitizeNumber(value, fallback)
-        ),
-        DEFAULTS.minimumSmoothing,
-        DEFAULTS.maximumSmoothing
-    );
-}
-
-function normalizeRotation(rotation) {
-    return {
-        x: clamp(
-            sanitizeNumber(rotation?.x, 0),
-            -90,
-            90
-        ),
-        y: normalizeAngle(
-            sanitizeNumber(rotation?.y, 0)
-        )
-    };
-}
-
-function copyVector(vector) {
-    return {
-        x: vector.x,
-        y: vector.y,
-        z: vector.z
-    };
-}
-
-function copyRotation(rotation) {
-    return {
-        x: rotation.x,
-        y: rotation.y
-    };
-}
-
-function easeInOut(progress) {
-    const t = clamp01(progress);
-    return t * t * (3 - 2 * t);
-}
-
 function resetRuntimeState(state) {
     state.active = false;
     state.elapsed = 0;
-    state.progress = 0;
+    state.progress = 1;
     state.started = false;
-    state.completed = false;
-    state.interrupted = false;
 }
 
-function complete(player, state) {
+function finishState(state, completed) {
+    state.active = false;
     state.elapsed = state.duration;
     state.progress = 1;
-
-    state.currentOffset = copyVector(state.targetOffset);
-    state.currentRotation = copyRotation(state.targetRotation);
-
-    const success = setMode(player, state.to);
-
-    state.active = false;
-    state.completed = success;
     state.started = false;
-
-    return success;
+    state.completed = completed;
 }
 
-function abort(state) {
-    state.active = false;
-    state.started = false;
-    state.interrupted = true;
-    state.completed = false;
-}
-
-export function begin(player, targetMode, options = {}) {
+export function begin(
+    player,
+    targetMode,
+    options = {}
+) {
     if (!isValidPlayer(player)) {
         return false;
     }
 
-    const normalizedTarget = normalizeMode(targetMode);
+    const normalizedTarget =
+        normalizeMode(targetMode);
 
     if (!normalizedTarget) {
         return false;
     }
 
-    const currentMode = getMode(player);
     const state = getState(player);
+
+    if (!state) {
+        return false;
+    }
+
+    const currentMode = getMode(player);
+
+    const duration =
+        normalizeDuration(
+            options.duration
+        );
+
+    const easeType =
+        normalizeEaseType(
+            options.easeType
+        );
 
     if (
         currentMode === normalizedTarget &&
@@ -233,90 +156,81 @@ export function begin(player, targetMode, options = {}) {
     ) {
         state.from = currentMode;
         state.to = normalizedTarget;
+        state.duration = duration;
+        state.elapsed = duration;
         state.progress = 1;
-        state.elapsed = 0;
+        state.started = false;
         state.completed = true;
         state.interrupted = false;
+        state.easeType = easeType;
 
         return true;
     }
 
-    const currentRotation = getPlayerRotation(player);
-
-    const startOffset = sanitizeVector3(
-        options.startOffset ?? state.currentOffset
-    );
-
-    const targetOffset = sanitizeVector3(
-        options.targetOffset ?? { x: 0, y: 0, z: 0 }
-    );
-
-    const startRotation = normalizeRotation(
-        options.startRotation ?? (
-            state.active
-                ? state.currentRotation
-                : currentRotation
-        )
-    );
-
-    const targetRotation = normalizeRotation(
-        options.targetRotation ?? currentRotation
-    );
-
-    state.active = true;
     state.from = currentMode;
     state.to = normalizedTarget;
+    state.duration = duration;
     state.elapsed = 0;
-    state.duration = normalizeDuration(options.duration);
     state.progress = 0;
-
-    state.positionSmoothing = normalizeSmoothing(
-        options.positionSmoothing,
-        DEFAULTS.positionSmoothing
-    );
-
-    state.rotationSmoothing = normalizeSmoothing(
-        options.rotationSmoothing,
-        DEFAULTS.rotationSmoothing
-    );
-
-    state.startOffset = copyVector(startOffset);
-    state.targetOffset = copyVector(targetOffset);
-    state.currentOffset = copyVector(startOffset);
-
-    state.startRotation = copyRotation(startRotation);
-    state.targetRotation = copyRotation(targetRotation);
-    state.currentRotation = copyRotation(startRotation);
-
     state.started = true;
     state.completed = false;
     state.interrupted = false;
+    state.easeType = easeType;
+    state.active = true;
 
-    if (state.duration <= 0) {
-        return complete(player, state);
+    const cameraOptions = {
+        easeOptions: {
+            easeTime: duration,
+            easeType
+        }
+    };
+
+    const success = setMode(
+        player,
+        normalizedTarget,
+        cameraOptions
+    );
+
+    if (!success) {
+        state.active = false;
+        state.started = false;
+        state.interrupted = true;
+        state.completed = false;
+
+        return false;
+    }
+
+    if (duration <= 0) {
+        finishState(state, true);
+        return true;
     }
 
     return true;
 }
 
-export function update(player, deltaTime = 1 / 20) {
+export function update(
+    player,
+    deltaTime = 1 / 20
+) {
     if (!isValidPlayer(player)) {
         return false;
     }
 
     const state = getState(player);
 
-    if (!state.active) {
+    if (!state || !state.active) {
         return false;
     }
 
-    const dt = clamp(
+    const dt = Math.min(
+        0.25,
         Math.max(
             0,
-            sanitizeNumber(deltaTime, 1 / 20)
-        ),
-        0,
-        0.25
+            sanitizeNumber(
+                deltaTime,
+                1 / 20
+            )
+        )
     );
 
     if (dt <= 0) {
@@ -328,68 +242,39 @@ export function update(player, deltaTime = 1 / 20) {
         state.elapsed + dt
     );
 
-    const linearProgress = state.duration <= 0
-        ? 1
-        : clamp01(state.elapsed / state.duration);
+    state.progress =
+        state.duration <= 0
+            ? 1
+            : Math.min(
+                1,
+                state.elapsed /
+                state.duration
+            );
 
-    const progress = easeInOut(linearProgress);
+    const currentMode =
+        getMode(player);
 
-    state.progress = linearProgress;
+    if (
+        currentMode !== state.from &&
+        currentMode !== state.to
+    ) {
+        state.interrupted = true;
+        state.active = false;
+        state.started = false;
+        state.completed = false;
 
-    const targetOffset = {
-        x: lerp(
-            state.startOffset.x,
-            state.targetOffset.x,
-            progress
-        ),
-        y: lerp(
-            state.startOffset.y,
-            state.targetOffset.y,
-            progress
-        ),
-        z: lerp(
-            state.startOffset.z,
-            state.targetOffset.z,
-            progress
-        )
-    };
+        return false;
+    }
 
-    const targetRotation = {
-        x: lerp(
-            state.startRotation.x,
-            state.targetRotation.x,
-            progress
-        ),
-        y: lerpAngle(
-            state.startRotation.y,
-            state.targetRotation.y,
-            progress
-        )
-    };
+    if (
+        state.progress >= 1
+    ) {
+        finishState(
+            state,
+            currentMode === state.to
+        );
 
-    state.currentOffset = exponentialSmoothingVector3(
-        state.currentOffset,
-        targetOffset,
-        state.positionSmoothing,
-        dt
-    );
-
-    state.currentRotation.x = exponentialSmoothing(
-        state.currentRotation.x,
-        targetRotation.x,
-        state.rotationSmoothing,
-        dt
-    );
-
-    state.currentRotation.y = exponentialSmoothingAngle(
-        state.currentRotation.y,
-        targetRotation.y,
-        state.rotationSmoothing,
-        dt
-    );
-
-    if (linearProgress >= 1) {
-        return complete(player, state);
+        return currentMode === state.to;
     }
 
     return true;
@@ -402,11 +287,22 @@ export function cancel(player) {
 
     const state = getState(player);
 
-    if (!state.active) {
+    if (!state || !state.active) {
         return false;
     }
 
-    abort(state);
+    state.active = false;
+    state.started = false;
+    state.interrupted = true;
+    state.completed = false;
+
+    state.progress = Math.min(
+        1,
+        Math.max(
+            0,
+            state.progress
+        )
+    );
 
     return true;
 }
@@ -418,14 +314,31 @@ export function completeTransition(player) {
 
     const state = getState(player);
 
-    if (!state.active) {
+    if (!state || !state.active) {
         return false;
     }
 
-    return complete(player, state);
+    const success = setMode(
+        player,
+        state.to
+    );
+
+    finishState(
+        state,
+        success
+    );
+
+    if (!success) {
+        state.interrupted = true;
+    }
+
+    return success;
 }
 
-export function transitionToFirstPerson(player, options = {}) {
+export function transitionToFirstPerson(
+    player,
+    options = {}
+) {
     return begin(
         player,
         CAMERA_MODES.FIRST_PERSON,
@@ -433,7 +346,10 @@ export function transitionToFirstPerson(player, options = {}) {
     );
 }
 
-export function transitionToThirdPerson(player, options = {}) {
+export function transitionToThirdPerson(
+    player,
+    options = {}
+) {
     return begin(
         player,
         CAMERA_MODES.THIRD_PERSON,
@@ -446,15 +362,17 @@ export function isActive(player) {
         return false;
     }
 
-    return getState(player).active;
+    return Boolean(
+        getState(player)?.active
+    );
 }
 
 export function getProgress(player) {
     if (!isValidPlayer(player)) {
-        return 0;
+        return 1;
     }
 
-    return getState(player).progress;
+    return getState(player)?.progress ?? 1;
 }
 
 export function getElapsed(player) {
@@ -462,75 +380,16 @@ export function getElapsed(player) {
         return 0;
     }
 
-    return getState(player).elapsed;
+    return getState(player)?.elapsed ?? 0;
 }
 
 export function getDuration(player) {
     if (!isValidPlayer(player)) {
-        return 0;
+        return DEFAULTS.duration;
     }
 
-    return getState(player).duration;
-}
-
-export function getCurrentOffset(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return copyVector(
-        getState(player).currentOffset
-    );
-}
-
-export function getCurrentRotation(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return copyRotation(
-        getState(player).currentRotation
-    );
-}
-
-export function getStartOffset(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return copyVector(
-        getState(player).startOffset
-    );
-}
-
-export function getTargetOffset(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return copyVector(
-        getState(player).targetOffset
-    );
-}
-
-export function getStartRotation(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return copyRotation(
-        getState(player).startRotation
-    );
-}
-
-export function getTargetRotation(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return copyRotation(
-        getState(player).targetRotation
-    );
+    return getState(player)?.duration ??
+        DEFAULTS.duration;
 }
 
 export function getTransitionState(player) {
@@ -540,6 +399,10 @@ export function getTransitionState(player) {
 
     const state = getState(player);
 
+    if (!state) {
+        return null;
+    }
+
     return {
         active: state.active,
         from: state.from,
@@ -547,18 +410,153 @@ export function getTransitionState(player) {
         elapsed: state.elapsed,
         duration: state.duration,
         progress: state.progress,
-        positionSmoothing: state.positionSmoothing,
-        rotationSmoothing: state.rotationSmoothing,
         started: state.started,
         completed: state.completed,
         interrupted: state.interrupted,
-        startOffset: copyVector(state.startOffset),
-        targetOffset: copyVector(state.targetOffset),
-        currentOffset: copyVector(state.currentOffset),
-        startRotation: copyRotation(state.startRotation),
-        targetRotation: copyRotation(state.targetRotation),
-        currentRotation: copyRotation(state.currentRotation)
+        easeType: state.easeType
     };
+}
+
+export function getTransitionMode(player) {
+    if (!isValidPlayer(player)) {
+        return null;
+    }
+
+    const state = getState(player);
+
+    if (!state) {
+        return null;
+    }
+
+    return state.active
+        ? state.to
+        : getMode(player);
+}
+
+export function isTransitioningToFirstPerson(
+    player
+) {
+    if (!isValidPlayer(player)) {
+        return false;
+    }
+
+    const state = getState(player);
+
+    return Boolean(
+        state &&
+        state.active &&
+        state.to === CAMERA_MODES.FIRST_PERSON
+    );
+}
+
+export function isTransitioningToThirdPerson(
+    player
+) {
+    if (!isValidPlayer(player)) {
+        return false;
+    }
+
+    const state = getState(player);
+
+    return Boolean(
+        state &&
+        state.active &&
+        state.to === CAMERA_MODES.THIRD_PERSON
+    );
+}
+
+export function isCurrentlyFirstPerson(
+    player
+) {
+    return (
+        isValidPlayer(player) &&
+        isFirstPerson(player)
+    );
+}
+
+export function isCurrentlyThirdPerson(
+    player
+) {
+    return (
+        isValidPlayer(player) &&
+        isThirdPerson(player)
+    );
+}
+
+export function hasCompleted(player) {
+    if (!isValidPlayer(player)) {
+        return false;
+    }
+
+    return Boolean(
+        getState(player)?.completed
+    );
+}
+
+export function wasInterrupted(player) {
+    if (!isValidPlayer(player)) {
+        return false;
+    }
+
+    return Boolean(
+        getState(player)?.interrupted
+    );
+}
+
+export function setTransitionDuration(
+    player,
+    duration
+) {
+    if (!isValidPlayer(player)) {
+        return false;
+    }
+
+    const state = getState(player);
+
+    if (!state) {
+        return false;
+    }
+
+    state.duration =
+        normalizeDuration(duration);
+
+    if (
+        state.active &&
+        state.elapsed > state.duration
+    ) {
+        state.elapsed = state.duration;
+    }
+
+    return true;
+}
+
+export function getTransitionEaseType(player) {
+    if (!isValidPlayer(player)) {
+        return DEFAULTS.easeType;
+    }
+
+    return getState(player)?.easeType ??
+        DEFAULTS.easeType;
+}
+
+export function setTransitionEaseType(
+    player,
+    easeType
+) {
+    if (!isValidPlayer(player)) {
+        return false;
+    }
+
+    const state = getState(player);
+
+    if (!state) {
+        return false;
+    }
+
+    state.easeType =
+        normalizeEaseType(easeType);
+
+    return true;
 }
 
 export function reset(player) {
@@ -566,9 +564,7 @@ export function reset(player) {
         return false;
     }
 
-    states.delete(player);
-
-    return true;
+    return states.delete(player);
 }
 
 export function resetAll(players) {
@@ -587,113 +583,13 @@ export function resetAll(players) {
     return count;
 }
 
-export function isTransitioningToFirstPerson(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    const state = getState(player);
-
-    return (
-        state.active &&
-        state.to === CAMERA_MODES.FIRST_PERSON
-    );
-}
-
-export function isTransitioningToThirdPerson(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    const state = getState(player);
-
-    return (
-        state.active &&
-        state.to === CAMERA_MODES.THIRD_PERSON
-    );
-}
-
-export function isCurrentlyFirstPerson(player) {
-    return isValidPlayer(player) && isFirstPerson(player);
-}
-
-export function isCurrentlyThirdPerson(player) {
-    return isValidPlayer(player) && isThirdPerson(player);
-}
-
-export function getTransitionMode(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    const state = getState(player);
-
-    return state.active
-        ? state.to
-        : getMode(player);
-}
-
-export function hasCompleted(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getState(player).completed;
-}
-
-export function wasInterrupted(player) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    return getState(player).interrupted;
-}
-
-export function setTransitionDuration(player, duration) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    const state = getState(player);
-
-    state.duration = normalizeDuration(duration);
-
-    if (state.active) {
-        state.elapsed = Math.min(
-            state.elapsed,
-            state.duration
-        );
-    }
-
-    return true;
-}
-
-export function setPositionSmoothing(player, smoothing) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    const state = getState(player);
-
-    state.positionSmoothing = normalizeSmoothing(
-        smoothing,
-        state.positionSmoothing
-    );
-
-    return true;
-}
-
-export function setRotationSmoothing(player, smoothing) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    const state = getState(player);
-
-    state.rotationSmoothing = normalizeSmoothing(
-        smoothing,
-        state.rotationSmoothing
-    );
-
-    return true;
-} // YAEY, IM DONE!! =D
+export function getDefaults() {
+    return {
+        duration: DEFAULTS.duration,
+        easeType: DEFAULTS.easeType,
+        minimumDuration:
+            DEFAULTS.minimumDuration,
+        maximumDuration:
+            DEFAULTS.maximumDuration
+    };
+} // YAEY!! IM DONE!! =D

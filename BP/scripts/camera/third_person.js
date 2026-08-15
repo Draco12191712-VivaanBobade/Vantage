@@ -12,18 +12,9 @@ import {
 
 import {
     clamp,
-    clamp01,
-    lerp,
-    lerpAngle,
-    normalizeAngle,
     sanitizeNumber,
     sanitizeVector3
 } from "../utilities/math.js";
-
-import {
-    exponentialSmoothing,
-    exponentialSmoothingVector3
-} from "../utilities/interpolation.js";
 
 const DEFAULTS = Object.freeze({
     cameraOffset: Object.freeze({
@@ -32,51 +23,13 @@ const DEFAULTS = Object.freeze({
         z: 0
     }),
     fov: null,
-    smoothing: 14,
-    rotationSmoothing: 18,
-    positionSmoothing: 18,
     minFov: 1,
     maxFov: 179,
-    maxDeltaTime: 0.25,
-    defaultDeltaTime: 1 / 20
+    defaultDeltaTime: 1 / 20,
+    maxDeltaTime: 0.25
 });
 
 const states = new WeakMap();
-
-function createState() {
-    return {
-        enabled: false,
-        initialized: false,
-        offset: {
-            x: DEFAULTS.cameraOffset.x,
-            y: DEFAULTS.cameraOffset.y,
-            z: DEFAULTS.cameraOffset.z
-        },
-        currentOffset: {
-            x: DEFAULTS.cameraOffset.x,
-            y: DEFAULTS.cameraOffset.y,
-            z: DEFAULTS.cameraOffset.z
-        },
-        targetOffset: {
-            x: DEFAULTS.cameraOffset.x,
-            y: DEFAULTS.cameraOffset.y,
-            z: DEFAULTS.cameraOffset.z
-        },
-        fov: DEFAULTS.fov,
-        targetFov: DEFAULTS.fov,
-        currentYaw: 0,
-        currentPitch: 0,
-        targetYaw: 0,
-        targetPitch: 0,
-        smoothing: DEFAULTS.smoothing,
-        rotationSmoothing: DEFAULTS.rotationSmoothing,
-        positionSmoothing: DEFAULTS.positionSmoothing,
-        lastDeltaTime: DEFAULTS.defaultDeltaTime,
-        lastUpdate: 0,
-        updateCount: 0,
-        cameraOptions: undefined
-    };
-}
 
 function isValidPlayer(player) {
     if (!player) {
@@ -91,6 +44,36 @@ function isValidPlayer(player) {
     } catch {
         return false;
     }
+}
+
+function createState() {
+    return {
+        enabled: false,
+        initialized: false,
+
+        offset: {
+            x: DEFAULTS.cameraOffset.x,
+            y: DEFAULTS.cameraOffset.y,
+            z: DEFAULTS.cameraOffset.z
+        },
+
+        targetOffset: {
+            x: DEFAULTS.cameraOffset.x,
+            y: DEFAULTS.cameraOffset.y,
+            z: DEFAULTS.cameraOffset.z
+        },
+
+        fov: DEFAULTS.fov,
+        targetFov: DEFAULTS.fov,
+
+        cameraOptions: undefined,
+
+        lastDeltaTime:
+            DEFAULTS.defaultDeltaTime,
+
+        lastUpdate: 0,
+        updateCount: 0
+    };
 }
 
 function getState(player) {
@@ -108,47 +91,6 @@ function getState(player) {
     return state;
 }
 
-function getPlayerRotation(player) {
-    try {
-        const rotation = player.getRotation();
-
-        return {
-            x: sanitizeNumber(rotation?.x, 0),
-            y: sanitizeNumber(rotation?.y, 0)
-        };
-    } catch {
-        return {
-            x: 0,
-            y: 0
-        };
-    }
-}
-
-function normalizeRotation(rotation) {
-    return {
-        x: clamp(
-            sanitizeNumber(rotation?.x, 0),
-            -90,
-            90
-        ),
-        y: normalizeAngle(
-            sanitizeNumber(rotation?.y, 0)
-        )
-    };
-}
-
-function initializeRotation(player, state) {
-    const rotation = normalizeRotation(
-        getPlayerRotation(player)
-    );
-
-    state.currentPitch = rotation.x;
-    state.targetPitch = rotation.x;
-    state.currentYaw = rotation.y;
-    state.targetYaw = rotation.y;
-    state.initialized = true;
-}
-
 function normalizeDeltaTime(deltaTime) {
     return clamp(
         sanitizeNumber(
@@ -160,17 +102,35 @@ function normalizeDeltaTime(deltaTime) {
     );
 }
 
-function sanitizeSmoothing(value, fallback) {
-    return Math.max(
-        0,
-        sanitizeNumber(value, fallback)
+function normalizeFov(fov) {
+    if (!Number.isFinite(fov)) {
+        return null;
+    }
+
+    return clamp(
+        fov,
+        DEFAULTS.minFov,
+        DEFAULTS.maxFov
     );
 }
 
-function sanitizeCameraOptions(options) {
+function cloneVector3(value) {
+    return {
+        x: sanitizeNumber(value?.x, 0),
+        y: sanitizeNumber(value?.y, 0),
+        z: sanitizeNumber(value?.z, 0)
+    };
+}
+
+function cloneOptions(options) {
     if (
         options === undefined ||
-        options === null ||
+        options === null
+    ) {
+        return undefined;
+    }
+
+    if (
         typeof options !== "object" ||
         Array.isArray(options)
     ) {
@@ -186,104 +146,76 @@ function sanitizeCameraOptions(options) {
     }
 }
 
-function copyVector3(value) {
-    return {
-        x: value.x,
-        y: value.y,
-        z: value.z
-    };
+function normalizeCameraOptions(options) {
+    return cloneOptions(options);
 }
 
-function updateRotationState(
-    player,
-    state,
-    deltaTime
-) {
-    const rotation = normalizeRotation(
-        getPlayerRotation(player)
-    );
+function buildCameraOptions(state) {
+    const options =
+        cloneOptions(
+            state.cameraOptions
+        ) ?? {};
 
-    state.targetPitch = rotation.x;
-    state.targetYaw = rotation.y;
-
-    const rotationFactor = clamp01(
-        1 -
-        Math.exp(
-            -state.rotationSmoothing *
-            deltaTime
-        )
-    );
-
-    state.currentPitch = lerp(
-        state.currentPitch,
-        state.targetPitch,
-        rotationFactor
-    );
-
-    state.currentYaw = lerpAngle(
-        state.currentYaw,
-        state.targetYaw,
-        rotationFactor
-    );
-}
-
-function updateOffsetState(
-    state,
-    deltaTime
-) {
-    state.currentOffset =
-        exponentialSmoothingVector3(
-            state.currentOffset,
-            state.targetOffset,
-            state.positionSmoothing,
-            deltaTime
+    const offset =
+        cloneVector3(
+            state.targetOffset
         );
+
+    if (
+        offset.x !== 0 ||
+        offset.y !== 0 ||
+        offset.z !== 0
+    ) {
+        options.location = {
+            x: offset.x,
+            y: offset.y,
+            z: offset.z
+        };
+    }
+
+    return Object.keys(options).length > 0
+        ? options
+        : undefined;
 }
 
-function updateFovState(
-    player,
-    state,
-    deltaTime
-) {
+function applyFov(player, state) {
     if (
         state.targetFov === null ||
         state.targetFov === undefined
     ) {
-        return;
+        return true;
     }
 
-    if (state.fov === null) {
-        state.fov = state.targetFov;
-
-        setFov(
-            player,
-            state.fov
+    const value =
+        normalizeFov(
+            state.targetFov
         );
 
-        return;
+    if (value === null) {
+        return false;
     }
 
     if (
+        state.fov !== null &&
         Math.abs(
-            state.fov -
-            state.targetFov
-        ) <= 0.001
+            state.fov - value
+        ) < 0.001
     ) {
-        state.fov = state.targetFov;
-        return;
+        return true;
     }
 
-    state.fov = exponentialSmoothing(
-        state.fov,
-        state.targetFov,
-        state.smoothing,
-        deltaTime
-    );
+    if (
+        !setFov(
+            player,
+            value
+        )
+    ) {
+        return false;
+    }
 
-    setFov(
-        player,
-        state.fov
-    );
+    state.fov = value;
+
+    return true;
 }
 
 export function enable(
@@ -300,51 +232,40 @@ export function enable(
         return false;
     }
 
-    if (options.offset !== undefined) {
-        setCameraOffset(
-            player,
-            options.offset
-        );
-    }
-
-    if (options.fov !== undefined) {
-        setThirdPersonFov(
-            player,
-            options.fov
-        );
-    }
-
-    if (options.smoothing !== undefined) {
-        setSmoothing(
-            player,
-            options.smoothing
-        );
-    }
-
     if (
-        options.rotationSmoothing !==
-        undefined
+        options &&
+        typeof options === "object"
     ) {
-        setRotationSmoothing(
-            player,
-            options.rotationSmoothing
-        );
-    }
+        if (
+            options.offset !== undefined
+        ) {
+            setCameraOffset(
+                player,
+                options.offset
+            );
+        }
 
-    if (
-        options.positionSmoothing !==
-        undefined
-    ) {
-        setPositionSmoothing(
-            player,
-            options.positionSmoothing
-        );
+        if (
+            options.fov !== undefined
+        ) {
+            setThirdPersonFov(
+                player,
+                options.fov
+            );
+        }
+
+        if (
+            options.cameraOptions !== undefined
+        ) {
+            state.cameraOptions =
+                normalizeCameraOptions(
+                    options.cameraOptions
+                );
+        }
     }
 
     const cameraOptions =
-        sanitizeCameraOptions(
-            options.cameraOptions
-        );
+        buildCameraOptions(state);
 
     if (
         !setThirdPerson(
@@ -355,18 +276,14 @@ export function enable(
         return false;
     }
 
-    state.cameraOptions =
-        cameraOptions;
-
-    if (!state.initialized) {
-        initializeRotation(
-            player,
-            state
-        );
-    }
-
     state.enabled = true;
+    state.initialized = true;
     state.lastUpdate = Date.now();
+
+    applyFov(
+        player,
+        state
+    );
 
     return true;
 }
@@ -406,8 +323,8 @@ export function ensureEnabled(
     }
 
     if (
-        !isThirdPerson(player) ||
         !isEnabled(player) ||
+        !isThirdPerson(player) ||
         !isActive(player)
     ) {
         return enable(
@@ -433,9 +350,8 @@ export function setCameraOffset(
         return false;
     }
 
-    const value = sanitizeVector3(
-        offset
-    );
+    const value =
+        sanitizeVector3(offset);
 
     state.offset = {
         x: value.x,
@@ -466,9 +382,8 @@ export function setTargetCameraOffset(
         return false;
     }
 
-    const value = sanitizeVector3(
-        offset
-    );
+    const value =
+        sanitizeVector3(offset);
 
     state.targetOffset = {
         x: value.x,
@@ -487,13 +402,11 @@ export function getCameraOffset(player) {
     const state = getState(player);
 
     return state
-        ? copyVector3(state.offset)
+        ? cloneVector3(state.offset)
         : null;
 }
 
-export function getCurrentCameraOffset(
-    player
-) {
+export function getCurrentCameraOffset(player) {
     if (!isValidPlayer(player)) {
         return null;
     }
@@ -501,13 +414,11 @@ export function getCurrentCameraOffset(
     const state = getState(player);
 
     return state
-        ? copyVector3(state.currentOffset)
+        ? cloneVector3(state.targetOffset)
         : null;
 }
 
-export function getTargetCameraOffset(
-    player
-) {
+export function getTargetCameraOffset(player) {
     if (!isValidPlayer(player)) {
         return null;
     }
@@ -515,7 +426,7 @@ export function getTargetCameraOffset(
     const state = getState(player);
 
     return state
-        ? copyVector3(state.targetOffset)
+        ? cloneVector3(state.targetOffset)
         : null;
 }
 
@@ -525,17 +436,17 @@ export function setThirdPersonFov(
 ) {
     if (
         !isValidPlayer(player) ||
-        fov === null ||
-        fov === undefined
+        !Number.isFinite(fov)
     ) {
         return false;
     }
 
-    const value = clamp(
-        sanitizeNumber(fov, 70),
-        DEFAULTS.minFov,
-        DEFAULTS.maxFov
-    );
+    const value =
+        normalizeFov(fov);
+
+    if (value === null) {
+        return false;
+    }
 
     const state = getState(player);
 
@@ -558,17 +469,17 @@ export function setTargetFov(
 ) {
     if (
         !isValidPlayer(player) ||
-        fov === null ||
-        fov === undefined
+        !Number.isFinite(fov)
     ) {
         return false;
     }
 
-    const value = clamp(
-        sanitizeNumber(fov, 70),
-        DEFAULTS.minFov,
-        DEFAULTS.maxFov
-    );
+    const value =
+        normalizeFov(fov);
+
+    if (value === null) {
+        return false;
+    }
 
     const state = getState(player);
 
@@ -577,10 +488,6 @@ export function setTargetFov(
     }
 
     state.targetFov = value;
-
-    if (state.fov === null) {
-        state.fov = value;
-    }
 
     return true;
 }
@@ -623,9 +530,9 @@ export function getTargetFov(player) {
         null;
 }
 
-export function setSmoothing(
+export function setCameraOptions(
     player,
-    smoothing
+    options
 ) {
     if (!isValidPlayer(player)) {
         return false;
@@ -637,119 +544,15 @@ export function setSmoothing(
         return false;
     }
 
-    state.smoothing =
-        sanitizeSmoothing(
-            smoothing,
-            DEFAULTS.smoothing
+    state.cameraOptions =
+        normalizeCameraOptions(
+            options
         );
 
     return true;
 }
 
-export function getSmoothing(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return getState(player)
-        ?.smoothing ??
-        null;
-}
-
-export function setRotationSmoothing(
-    player,
-    smoothing
-) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    const state = getState(player);
-
-    if (!state) {
-        return false;
-    }
-
-    state.rotationSmoothing =
-        sanitizeSmoothing(
-            smoothing,
-            DEFAULTS.rotationSmoothing
-        );
-
-    return true;
-}
-
-export function getRotationSmoothing(
-    player
-) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return getState(player)
-        ?.rotationSmoothing ??
-        null;
-}
-
-export function setPositionSmoothing(
-    player,
-    smoothing
-) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    const state = getState(player);
-
-    if (!state) {
-        return false;
-    }
-
-    state.positionSmoothing =
-        sanitizeSmoothing(
-            smoothing,
-            DEFAULTS.positionSmoothing
-        );
-
-    return true;
-}
-
-export function getPositionSmoothing(
-    player
-) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    return getState(player)
-        ?.positionSmoothing ??
-        null;
-}
-
-export function setRotationTarget(
-    player,
-    rotation
-) {
-    if (!isValidPlayer(player)) {
-        return false;
-    }
-
-    const state = getState(player);
-
-    if (!state) {
-        return false;
-    }
-
-    const value =
-        normalizeRotation(rotation);
-
-    state.targetPitch = value.x;
-    state.targetYaw = value.y;
-
-    return true;
-}
-
-export function getRotation(player) {
+export function getCameraOptions(player) {
     if (!isValidPlayer(player)) {
         return null;
     }
@@ -760,27 +563,9 @@ export function getRotation(player) {
         return null;
     }
 
-    return {
-        x: state.currentPitch,
-        y: state.currentYaw
-    };
-}
-
-export function getTargetRotation(player) {
-    if (!isValidPlayer(player)) {
-        return null;
-    }
-
-    const state = getState(player);
-
-    if (!state) {
-        return null;
-    }
-
-    return {
-        x: state.targetPitch,
-        y: state.targetYaw
-    };
+    return cloneOptions(
+        state.cameraOptions
+    ) ?? null;
 }
 
 export function update(
@@ -797,9 +582,10 @@ export function update(
         return false;
     }
 
-    const dt = normalizeDeltaTime(
-        deltaTime
-    );
+    const dt =
+        normalizeDeltaTime(
+            deltaTime
+        );
 
     state.lastDeltaTime = dt;
 
@@ -812,28 +598,23 @@ export function update(
         return false;
     }
 
-    if (!state.initialized) {
-        initializeRotation(
-            player,
-            state
-        );
+    if (!isActive(player)) {
+        const cameraOptions =
+            buildCameraOptions(state);
+
+        if (
+            !setThirdPerson(
+                player,
+                cameraOptions
+            )
+        ) {
+            return false;
+        }
     }
 
-    updateRotationState(
+    applyFov(
         player,
-        state,
-        dt
-    );
-
-    updateOffsetState(
-        state,
-        dt
-    );
-
-    updateFovState(
-        player,
-        state,
-        dt
+        state
     );
 
     updateCamera(
@@ -852,9 +633,7 @@ export function reset(player) {
         return false;
     }
 
-    states.delete(player);
-
-    return true;
+    return states.delete(player);
 }
 
 export function getStateSnapshot(player) {
@@ -871,36 +650,30 @@ export function getStateSnapshot(player) {
     return {
         enabled: state.enabled,
         initialized: state.initialized,
-        offset: copyVector3(
+
+        offset: cloneVector3(
             state.offset
         ),
-        currentOffset:
-            copyVector3(
-                state.currentOffset
-            ),
+
         targetOffset:
-            copyVector3(
+            cloneVector3(
                 state.targetOffset
             ),
+
         fov: state.fov,
         targetFov: state.targetFov,
-        rotation: {
-            x: state.currentPitch,
-            y: state.currentYaw
-        },
-        targetRotation: {
-            x: state.targetPitch,
-            y: state.targetYaw
-        },
-        smoothing: state.smoothing,
-        rotationSmoothing:
-            state.rotationSmoothing,
-        positionSmoothing:
-            state.positionSmoothing,
+
+        cameraOptions:
+            cloneOptions(
+                state.cameraOptions
+            ),
+
         lastDeltaTime:
             state.lastDeltaTime,
+
         lastUpdate:
             state.lastUpdate,
+
         updateCount:
             state.updateCount
     };
@@ -922,16 +695,11 @@ export function getDefaults() {
             z: DEFAULTS.cameraOffset.z
         },
         fov: DEFAULTS.fov,
-        smoothing: DEFAULTS.smoothing,
-        rotationSmoothing:
-            DEFAULTS.rotationSmoothing,
-        positionSmoothing:
-            DEFAULTS.positionSmoothing,
         minFov: DEFAULTS.minFov,
         maxFov: DEFAULTS.maxFov,
-        maxDeltaTime:
-            DEFAULTS.maxDeltaTime,
         defaultDeltaTime:
-            DEFAULTS.defaultDeltaTime
+            DEFAULTS.defaultDeltaTime,
+        maxDeltaTime:
+            DEFAULTS.maxDeltaTime
     };
 }
