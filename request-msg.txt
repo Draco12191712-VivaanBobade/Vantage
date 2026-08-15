@@ -1,0 +1,30 @@
+Dynamic First-Person Addon for Minecraft Bedrock
+
+I’m looking for a true dynamic first-person addon for Minecraft Bedrock, focused on compatibility and stability rather than flashy effects.
+
+Requirements
+
+* Full body visible in first person (legs, torso, arms, etc.).
+* Seamless switching between first-person and third-person.
+* Fully compatible with other addons whenever possible.
+* Compatible with texture packs without causing visual issues.
+* Works correctly with both touch controls and mouse and keyboard/controller.
+* Accurate crosshair and hit detection, with no offset between the camera and interactions.
+* Smooth animations without affecting gameplay.
+* Multiplayer-friendly and survival-friendly.
+* Lightweight and optimized for performance.
+* Compatible with the latest version of Bedrock.
+
+Optional Features
+
+* Configurable body visibility.
+* Adjustable camera position.
+* FOV compatibility.
+* Crawling, swimming, sneaking, and riding animations.
+* Support for custom player animations without conflicts.
+
+The main goal is to create a first-person experience that feels native to Minecraft Bedrock while remaining highly compatible with existing addons and resource packs.
+
+Submmited by @7T it's over (sick_0_0) on Discord
+
+https://discord.com/channels/1460137049700175894/1533560925985046578/1533560925985046578
