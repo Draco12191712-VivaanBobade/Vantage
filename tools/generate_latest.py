@@ -9,11 +9,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 VERSION_PATTERN = re.compile(
     r"^.+_v(?P<version>\d+\.\d+\.\d+-[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)"
-    r"\.(?P<extension>mcpack|brproject)$",
+    r"\.(?P<extension>mcaddon|brproject)$",
     re.IGNORECASE,
 )
 SUPPORTED_EXTENSIONS = {
-    ".mcpack",
+    ".mcaddon",
     ".brproject",
 }
 def calculate_sha512(path: Path) -> str:
@@ -54,7 +54,7 @@ def find_release_files(release_directory: Path):
             raise ValueError(
                 f"Invalid release filename: {path.name}\n"
                 "Expected format:\n"
-                "PackName_vx.x.x-versionstatus.x.mcpack"
+                "PackName_vx.x.x-versionstatus.x.mcaddon"
             )
         files.append(
             {
@@ -87,17 +87,17 @@ def generate_latest_yml(
     files,
     output_path: Path,
 ):
-    mcpack = next(
+    mcaddon = next(
         (
             file
             for file in files
-            if file["extension"] == "mcpack"
+            if file["extension"] == "mcaddon"
         ),
         None,
     )
-    if mcpack is None:
+    if mcaddon is None:
         raise ValueError(
-            "No .mcpack file was found."
+            "No .mcaddon file was found."
         )
     version = files[0]["version"]
     release_date = get_release_date()
@@ -119,15 +119,15 @@ def generate_latest_yml(
         output.append(
             f"    size: {size}"
         )
-    mcpack_path = mcpack["path"]
-    mcpack_hash = calculate_sha512(
-        mcpack_path
+    mcaddon_path = mcaddon["path"]
+    mcaddon_hash = calculate_sha512(
+        mcaddon_path
     )
     output.append(
-        f"path: {mcpack_path.name}"
+        f"path: {mcaddon_path.name}"
     )
     output.append(
-        f"sha512: {mcpack_hash}"
+        f"sha512: {mcaddon_hash}"
     )
     output.append(
         f"releaseDate: {yaml_string(release_date)}"
@@ -192,7 +192,7 @@ def main():
         )
         if not files:
             raise ValueError(
-                "No .mcpack or .brproject files were found."
+                "No .mcaddon or .brproject files were found."
             )
         validate_versions(files)
         version, release_date = (
