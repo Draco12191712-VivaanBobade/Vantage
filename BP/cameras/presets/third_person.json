@@ -3,6 +3,11 @@
 	"minecraft:camera_preset": {
 		"identifier": "vantage:third_person",
 		"inherit_from": "minecraft:follow_orbit",
-		"radius": 4.0
+		"radius": 4.0,
+		"entity_offset": [
+			0.0,
+			0.0,
+			0.26
+		]
 	}
 }

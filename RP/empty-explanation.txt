@@ -1,1 +1,0 @@
-The only reason the RP is empty AND kept is because future implementation of this addon may include RP files, but not as of now. :D
