@@ -14,11 +14,13 @@
 			"dash": [
 				"0.11.7"
 			]
-		}
+		},
+		"license": "MPL-2.0 (Mozilla Public License v2.0)",
+		"url": ""
 	},
 	"header": {
 		"name": "Vantage",
-		"description": "Vantage is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more. V0.1.0-alpha.1, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0.",
+		"description": "Vantage is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more. V0.0.1-alpha.1, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0.",
 		"min_engine_version": [
 			1,
 			26,
