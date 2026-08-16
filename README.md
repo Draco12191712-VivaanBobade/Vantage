@@ -24,9 +24,7 @@ Basically, the goal is pretty simple: **make first person feel like something th
 
 ## Vanilla Friendly
 
-Vantage is designed to complement Minecraft rather than replace its visual identity. It avoids unneccesary custom assets and focuses on improving the way first person feels while keeping the rest of Minecraft familiar.
-
-No crazy visual overhaul. No replacing Minecraft's entire player. Just a better first-person experience! :D
+Vantage is designed to complement Minecraft rather than replace its visual identity. It avoids unneccesary custom assets and focuses on improving the way first person feels while keeping the rest of Minecraft normal.
 
 ## Compatibility
 
@@ -37,9 +35,7 @@ if it does, you can open an issue or PR in order to get that bug fixed!
 
 ## Performance
 
-Performance is a major part of Vantage's design. The add-on is built to be lightweight and avoid unnecessary processing, making it suitable for survival, multiplayer, and everyday gameplay.
-
-The goal isn't to make your game do a million things every tick just to move a camera two pixels. ;)
+Performance is a major part of Vantage's design. The add-on is built to avoid unnecessary processing.
 
 ## Screenshots
 
@@ -50,8 +46,6 @@ Showcase coming soon! ;D
 Vantage is an original Minecraft Bedrock Edition add-on created and maintained by **Draco12191712**.
 
 This add-on was suggested by **sick_0_0** on Discord; you can contact him [here](https://discord.com/users/1353824744578879491).
-
-Vantage uses Minecraft Bedrock's official scripting and add-on systems to implement its functionality.
 
 Minecraft is developed by Mojang Studios and Microsoft.
 
