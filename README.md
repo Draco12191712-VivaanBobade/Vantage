@@ -1,12 +1,10 @@
 # Vantage
 
-**A natural, full-body first-person experience for Minecraft: Bedrock Edition!**
-
 Vantage is a dynamic first-person add-on for Minecraft: Bedrock Edition! It's made to make first-person feel more natural without changing the way Minecraft feels. Vantage brings your full player body into first person while also adding smooth camera transitions. Your crosshair and interactions stay aligned with where you're looking, too! :D
 
-Vantage provides an enhanced first person camera system designd to make movement and camera behaviorfeel smoother and more natural. It includes smooth camera movement, player state awareness, interpolation support, configurable camera behavior, and seamless transitions between perspectives!
+Vantage provides an enhanced first person camera system designd to make movement and camera behaviorfeel smoother and more natural. It includes smooth camera movement, player state awareness, interpolation support, configurable camera behavior, and transitions between perspectives!
 
-Vantage is built around a modular camera and player framework. It includes first- and third-person camera systems, player state and pose detection, visibility control, interpolation utils, persistent config support, performance management, and multiplayer compatibility.
+Vantage is built around a modular camera and player framework. It includes first and third-person camera systems, player state and pose detection, visibility control, interpolation utils, persistent config support, performance management, and multiplayer compatibility.
 
 Vantage keeps track of what the player is doing, allowing its systems to react to different movement and gameplay states such as walking, sprinting, sneaking, swimming, crawling, jumping, falling, climbing, gliding, riding, flying, and more!
 
@@ -18,7 +16,6 @@ Vantage is also designed to be lightweight and optimized. Its systems use runtim
 
 Vantage also includes a reusable math and interpolation system for smooth camera behavior and movement. This includes linear interpolation, angle interpolation, smoothstep, smootherstep, vector operations, distance calculations, normalization, dot and cross products, angle normalization, clamping, remapping, exponential smoothing, and speed based interpolation.
 
-Vantage isn't trying to turn Minecraft into something completely different. It simply aims to make the camera and player experience feel more polished while keeping the familiar Minecraft gameplay experience intact.
 
 Basically, the goal is pretty simple: **make first person feel like something that should have always been part of Bedrock.** :p
 
