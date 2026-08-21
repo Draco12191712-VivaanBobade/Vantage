@@ -1,30 +1,26 @@
-Dynamic First-Person Addon for Minecraft Bedrock
+Dynamic first-person addon for Minecraft Bedrock
 
-I’m looking for a true dynamic first-person addon for Minecraft Bedrock, focused on compatibility and stability rather than flashy effects.
+I'm looking for a true dynamic first-person addon for Minecraft Bedrock, focused on compatibility and stability rather than flashy effects.
 
-Requirements
+requirements
 
-* Full body visible in first person (legs, torso, arms, etc.).
-* Seamless switching between first-person and third-person.
-* Fully compatible with other addons whenever possible.
-* Compatible with texture packs without causing visual issues.
-* Works correctly with both touch controls and mouse and keyboard/controller.
-* Accurate crosshair and hit detection, with no offset between the camera and interactions.
-* Smooth animations without affecting gameplay.
-* Multiplayer-friendly and survival-friendly.
-* Lightweight and optimized for performance.
-* Compatible with the latest version of Bedrock.
+- full body visible in first person (legs, torso, arms, etc.).
+- seamless switching between first-person and third-person.
+- fully compatible with other addons whenever possible.
+- compatible with texture packs without causing visual issues.
+- works correctly with both touch controls and mouse & keyboard/controller.
+- accurate crosshair and hit detection, with no offset between the camera and interactions.
+- smooth animations without affecting gameplay.
+- multiplayer-friendly and survival-friendly.
+- lightweight and optimized for performance.
+- compatible with the latest Bedrock version.
 
-Optional Features
+optional features
 
-* Configurable body visibility.
-* Adjustable camera position.
-* FOV compatibility.
-* Crawling, swimming, sneaking, and riding animations.
-* Support for custom player animations without conflicts.
+- configurable body visibility.
+- adjustable camera position.
+- FOV compatibility.
+- crawling, swimming, sneaking, and riding animations.
+- support for custom player animations without conflicts.
 
-The main goal is to create a first-person experience that feels native to Minecraft Bedrock while remaining highly compatible with existing addons and resource packs.
-
-Submmited by @7T it's over (sick_0_0) on Discord
-
-https://discord.com/channels/1460137049700175894/1533560925985046578/1533560925985046578
+The main goal is to create a first-person experience that feels native to Minecraft Bedrock, while remaining highly compatible with existing addons and resource packs.
