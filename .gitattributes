@@ -48,6 +48,7 @@ release/** linguist-generated=true
 *.trade_table   text
 *.dialogue      text
 *.fog           text
+*.mcfunction linguist-detectable=true
 
 # images
 *.png           binary
