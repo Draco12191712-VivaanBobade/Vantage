@@ -19,8 +19,8 @@
 		"url": "https://github.com/Draco12191712-VivaanBobade/Vantage"
 	},
 	"header": {
-		"name": "Vantage",
-		"description": "Vantage is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more. V0.0.1-alpha.1, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0.",
+		"name": "§9§lVantage§r Behaviors",
+		"description": "§b§lVantage§r §7is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more.§r\n\n§e§lBUILD DETAILS:§r §7V0.1.0-alpha.1, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0822§r",
 		"min_engine_version": [
 			1,
 			26,
@@ -35,6 +35,8 @@
 	},
 	"modules": [
 		{
+			"name": "Vantage Behavior Module",
+			"description"
 			"type": "data",
 			"uuid": "84f9750e-2861-47e4-9ea3-1bea5a5ace7c",
 			"version": [
