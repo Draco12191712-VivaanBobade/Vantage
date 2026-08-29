@@ -1,14 +1,12 @@
 import { world, system, CustomCommandStatus, CommandPermissionLevel } from "@minecraft/server";
 import { ModalFormData } from "@minecraft/server-ui";
-const CAMERA_ID = "vantage:free_cam";
 const NAMESPACE = "vantage:";
-/** @type {Map<string, {enabled:boolean, backOffset:number, heightOffset:number, sneakJumpToggle:boolean}>} */
+const SCORE_OBJECTIVE = "vantage_on";
+/** @type {Map<string, {enabled:boolean, sneakJumpToggle:boolean}>} */
 const configCache = new Map();
 const DEFAULT_CONFIG = Object.freeze({
     enabled: true,
-    backOffset: 0.0,
-    heightOffset: 0.0,
-    sneakJumpToggle: false,
+    sneakJumpToggle: true,
 });
 function loadConfig(player) {
     try {
@@ -37,40 +35,13 @@ function saveConfig(player, cfg) {
         console.warn("[Vantage] Failed to save config for " + player.name + ": " + e);
     }
 }
-function yawPitchToForward(rotation) {
-    const yawRad = (rotation.y * Math.PI) / 180;
-    const pitchRad = (rotation.x * Math.PI) / 180;
-    return {
-        x: -Math.sin(yawRad) * Math.cos(pitchRad),
-        y: -Math.sin(pitchRad),
-        z: Math.cos(yawRad) * Math.cos(pitchRad),
-    };
-}
-function applyVantageCamera(player) {
-    const cfg = getConfig(player);
+function pushScoreboard(player, cfg) {
     try {
-        const eye = typeof player.getHeadLocation === "function" ? player.getHeadLocation() : player.location;
-        const rot = player.getRotation();
-        const fwd = yawPitchToForward(rot);
-        const camPos = {
-            x: eye.x - fwd.x * cfg.backOffset,
-            y: eye.y + cfg.heightOffset,
-            z: eye.z - fwd.z * cfg.backOffset,
-        };
-        player.camera.setCamera(CAMERA_ID, {
-            location: camPos,
-            rotation: { x: rot.x, y: rot.y },
-            easeOptions: { easeTime: 0 },
-        });
+        player.runCommand(
+            "scoreboard players set @s " + SCORE_OBJECTIVE + " " + (cfg.enabled ? 1 : 0)
+        );
     } catch (e) {
-        console.warn("[Vantage] setCamera failed for " + player.name + ": " + e);
-    }
-}
-function clearVantageCamera(player) {
-    try {
-        player.camera.clear();
-    } catch (e) {
-        console.warn("[Vantage] camera.clear failed for " + player.name + ": " + e);
+        console.warn("[Vantage] Failed to update scoreboard for " + player.name + ": " + e);
     }
 }
 const toggleCooldown = new Map();
@@ -84,8 +55,7 @@ function handleQuickToggle(player, cfg) {
     if (player.isSneaking && player.isJumping) {
         cfg.enabled = !cfg.enabled;
         saveConfig(player, cfg);
-        if (cfg.enabled) applyVantageCamera(player);
-        else clearVantageCamera(player);
+        pushScoreboard(player, cfg);
         player.onScreenDisplay.setActionBar(
             cfg.enabled ? "\u00a7aVantage: On" : "\u00a77Vantage: Off"
         );
@@ -94,15 +64,33 @@ function handleQuickToggle(player, cfg) {
 }
 system.runInterval(() => {
     for (const player of world.getAllPlayers()) {
-        const cfg = getConfig(player);
-        handleQuickToggle(player, cfg);
-        if (cfg.enabled) applyVantageCamera(player);
+        handleQuickToggle(player, getConfig(player));
     }
 }, 1);
 world.afterEvents.playerSpawn.subscribe((event) => {
-    if (!event.initialSpawn) return;
-    const cfg = loadConfig(event.player);
-    if (cfg.enabled) system.run(() => applyVantageCamera(event.player));
+    const { player, initialSpawn } = event;
+    if (!initialSpawn) return;
+    const cfg = loadConfig(player);
+    system.run(() => pushScoreboard(player, cfg));
+    player.sendMessage("\u00a75\u00a7l\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501");
+    player.sendMessage("\u00a75\u00a7lWelcome to Vantage, \u00a7d" + player.name + "\u00a75\u00a7l!");
+    player.sendMessage("\u00a75\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501");
+    player.sendMessage("\u00a77Vantage is currently in \u00a7eStable\u00a77.");
+    player.sendMessage("\u00a77Bugs, changes, and unfinished features may still occur.");
+    player.sendMessage("\u00a76\u00a7lSetup");
+    player.sendMessage("\u00a77\u2022 Make sure \u00a7eBeta APIs\u00a77 are enabled.");
+    player.sendMessage("\u00a77\u2022 Make sure you're running \u00a7eMinecraft 1.26.0\u00a77 or newer.");
+    player.sendMessage("\u00a7aIf you're seeing this message, your setup is working!");
+    player.sendMessage("\u00a7b\u00a7lConfiguration");
+    player.sendMessage("\u00a77Open the config menu anytime with:");
+    player.sendMessage("\u00a7e/vantage:configmenu");
+    player.sendMessage("\u00a77Sneak + Jump quick-toggles Vantage on/off.");
+    player.sendMessage("\u00a76\u00a7lHeads up");
+    player.sendMessage("\u00a77While Vantage is on, F5 view-switching is disabled");
+    player.sendMessage("\u00a77by the engine itself \u2014 turn Vantage off to get it back.");
+    player.sendMessage("\u00a75\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501");
+    player.sendMessage("\u00a7d\u00a7lHave fun with Vantage!");
+    player.sendMessage("\u00a75\u00a7l\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501");
 });
 world.afterEvents.playerLeave.subscribe((event) => {
     configCache.delete(event.playerId);
@@ -112,19 +100,17 @@ function openConfigMenu(player) {
     const cfg = getConfig(player);
     const form = new ModalFormData()
         .title("Vantage Configuration")
-        .toggle("Enable Vantage (first-person body)", cfg.enabled)
-        .slider("Camera back/forward offset", -0.4, 0.2, 0.05, cfg.backOffset)
-        .slider("Camera height offset", -0.3, 0.3, 0.05, cfg.heightOffset)
-        .toggle("Quick-toggle with Sneak + Jump", cfg.sneakJumpToggle);
+        .toggle("Enable Vantage (first-person body)", { defaultValue: cfg.enabled })
+        .toggle("Quick-toggle with Sneak + Jump", { defaultValue: cfg.sneakJumpToggle });
+
     form
         .show(player)
         .then((response) => {
             if (response.canceled || !response.formValues) return;
-            const [enabled, backOffset, heightOffset, sneakJumpToggle] = response.formValues;
-            const newCfg = { enabled, backOffset, heightOffset, sneakJumpToggle };
+            const [enabled, sneakJumpToggle] = response.formValues;
+            const newCfg = { enabled, sneakJumpToggle };
             saveConfig(player, newCfg);
-            if (enabled) applyVantageCamera(player);
-            else clearVantageCamera(player);
+            pushScoreboard(player, newCfg);
             player.sendMessage("\u00a7a[Vantage]\u00a7r Settings updated.");
         })
         .catch((e) => console.warn("[Vantage] Menu error: " + e));
@@ -148,15 +134,13 @@ try {
 } catch (e) {
     console.warn("[Vantage] Custom command registration unavailable, using fallbacks only: " + e);
 }
-system.afterEvents.scriptEventReceive.subscribe((event) => {
-    if (event.id !== "vantage:configmenu") return;
-    const player = event.sourceEntity;
-    if (player) openConfigMenu(player);
-});
-world.beforeEvents.chatSend.subscribe((event) => {
-    if (event.message.trim().toLowerCase() !== "!vantage") return;
-    event.cancel = true;
-    const player = event.sender;
-    system.run(() => openConfigMenu(player));
-});
-console.warn("[Vantage] loaded — use /vantage:configmenu or type !vantage in chat.");
+try {
+    system.afterEvents.scriptEventReceive.subscribe((event) => {
+        if (event.id !== "vantage:configmenu") return;
+        const player = event.sourceEntity;
+        if (player) openConfigMenu(player);
+    });
+} catch (e) {
+    console.warn("[Vantage] scriptevent fallback unavailable: " + e);
+}
+console.warn("[Vantage] loaded — use /vantage:configmenu to open settings.");
