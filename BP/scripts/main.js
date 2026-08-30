@@ -27,7 +27,6 @@ function loadConfig(player) {
     configCache.set(player.id, cfg);
     return cfg;
 }
-
 function getConfig(player) {
     return configCache.get(player.id) ?? loadConfig(player);
 }
@@ -120,14 +119,13 @@ world.afterEvents.playerLeave.subscribe((event) => {
 function openConfigMenu(player) {
     const cfg = getConfig(player);
     const form = new ModalFormData()
-        .title("Vantage Configuration")
-        .toggle("Enable Vantage", cfg.enabled)
+        .title("Vantage v3 Configuration")
+        .toggle("Enable Vantage", { defaultValue: cfg.enabled, valueType: "boolean" })
         .slider("Camera Forward/Back (Z)", -0.5, 0.8, 0.05, cfg.offsetZ)
         .slider("Camera Left/Right (X)", -0.3, 0.3, 0.05, cfg.offsetX)
         .slider("Camera Up/Down (Y)", -0.3, 0.3, 0.05, cfg.offsetY)
         .slider("Body Visibility (%)", 0, 100, 10, cfg.opacity)
-        .toggle("Quick-toggle (Sneak + Jump)", cfg.sneakJumpToggle);
-
+        .toggle("Quick-toggle (Sneak + Jump)", { defaultValue: cfg.sneakJumpToggle, valueType: "boolean" });
     form
         .show(player)
         .then((response) => {
