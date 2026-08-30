@@ -20,13 +20,13 @@
 	},
 	"header": {
 		"name": "§9§lVantage§r Behaviors",
-		"description": "§b§lVantage§r §7is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more.§r\n\n§e§lBUILD DETAILS:§r §7v0.1.2, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0829.3§r",
+		"description": "§b§lVantage§r §7is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more.§r\n\n§e§lBUILD DETAILS:§r §7v0.1.2, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0830§r",
 		"min_engine_version": [
 			1,
 			26,
 			0
 		],
-		"uuid": "20c1797e-3e1c-4cac-aba3-4e44cbc7da47",
+		"uuid": "df9c5a01-48bd-4bf3-94e0-8e4ba56af13b",
 		"version": [
 			0,
 			1,
@@ -38,7 +38,7 @@
 			"name": "Vantage Behavior Module",
 			"description": "Behavior module assets for Vantage",
 			"type": "data",
-			"uuid": "84f9750e-2861-47e4-9ea3-1bea5a5ace7c",
+			"uuid": "9bbf8315-5afb-4398-a303-db404c9cb039",
 			"version": [
 				0,
 				1,
@@ -48,7 +48,7 @@
 		{
 			"type": "script",
 			"language": "javascript",
-			"uuid": "aa3f951a-81b6-4784-829a-750666d0d462",
+			"uuid": "b3c48929-c09a-4fe7-a57b-3f9e93672673",
 			"entry": "scripts/main.js",
 			"version": [
 				0,

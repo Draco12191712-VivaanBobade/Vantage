@@ -1,0 +1,49 @@
+{
+    "format_version": 2,
+    "metadata": {
+        "authors": [
+            "Draco12191712 (Vivaan Bobade)"
+        ],
+        "generated_with": {
+            "java-uuid-gen": [
+                "0.3.9"
+            ],
+            "bridge": [
+                "2.7.54"
+            ],
+            "dash": [
+                "0.11.7"
+            ]
+        },
+        "license": "MPL-2.0 (Mozilla Public License v2.0)",
+        "url": "https://github.com/Draco12191712-VivaanBobade/Vantage"
+    },
+    "header": {
+        "name": "§9§lVantage§r Resources",
+        "description": "§b§lVantage§r §7is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more.§r\n\n§e§lBUILD DETAILS:§r §7v0.1.2, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0830§r",
+        "min_engine_version": [
+            1,
+            26,
+            0
+        ],
+        "uuid": "32a52da7-56df-4241-b6cd-066b88d5b2aa",
+        "version": [
+            0,
+            1,
+            2
+        ]
+    },
+    "modules": [
+        {
+            "name": "Vantage Resource Module",
+            "description": "Resource module assets for Vantage",
+            "type": "data",
+            "uuid": "fc8375d2-5a87-488e-ab81-2374f6cc453b",
+            "version": [
+                0,
+                1,
+                2
+            ]
+        }
+    ]
+}
