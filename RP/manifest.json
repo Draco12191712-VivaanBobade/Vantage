@@ -38,7 +38,7 @@
         {
             "name": "Vantage Resource Module",
             "description": "Resource module assets for Vantage",
-            "type": "data",
+            "type": "resources",
             "uuid": "fc8375d2-5a87-488e-ab81-2374f6cc453b",
             "version": [
                 1,

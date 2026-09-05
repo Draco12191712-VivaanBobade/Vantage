@@ -1,64 +1,73 @@
+/**
+* Vantage - Custom Commands
+* ------------------------------------------------------------------
+* The stable Custom Commands API requires namespaced names and has no
+* alias-registration call; it instead exposes a non-namespaced
+* convenience form automatically. Registering the menu as
+* `vantage:vantage` is what makes that convenience form come out to
+* exactly `/vantage`.
+*
+* `CommandPermissionLevel.Any` + `cheatsRequired: false` is deliberate:
+* this is a personal view preference, so survival players without
+* operator rights must be able to use it.
+*
+* Registration is wrapped by the caller in try/catch - on a runtime
+* that predates custom commands, the sneak+jump toggle still works.
+*/
+
 import { system, CommandPermissionLevel, CustomCommandStatus, Player } from "@minecraft/server";
 import { showMainMenu, showSettingsMenu } from "./vantage_forms.js";
-import { setEnabledFor, isEnabledFor } from "./vantage_config.js";
+import { toggleVantage } from "./vantage_input.js";
+
 export function registerCommands() {
-  system.beforeEvents.startup.subscribe((init) => {
+  const startup = system.beforeEvents?.startup;
+  if (!startup?.subscribe) return false;
+
+  startup.subscribe((init) => {
     const registry = init.customCommandRegistry;
+    if (!registry?.registerCommand) return;
+
+    const meta = (name, description) => ({
+      name,
+      description,
+      permissionLevel: CommandPermissionLevel.Any,
+      cheatsRequired: false,
+    });
+
     registry.registerCommand(
-      {
-        name: "vantage:vantage",
-        description: "Opens the Vantage first-person body configuration menu.",
-        permissionLevel: CommandPermissionLevel.Any,
-        cheatsRequired: false,
-      },
-      (origin) => {
-        const player = originAsPlayer(origin);
-        if (!player) return failure("This command can only be used by a player.");
-        system.run(() => showMainMenu(player));
-        return { status: CustomCommandStatus.Success };
-      }
+      meta("vantage:vantage", "Opens the Vantage first-person body menu."),
+      (origin) => run(origin, (player) => showMainMenu(player))
     );
+
     registry.registerCommand(
-      {
-        name: "vantage:toggle",
-        description: "Toggles the Vantage dynamic first-person body on or off.",
-        permissionLevel: CommandPermissionLevel.Any,
-        cheatsRequired: false,
-      },
-      (origin) => {
-        const player = originAsPlayer(origin);
-        if (!player) return failure("This command can only be used by a player.");
-        system.run(() => {
-          const next = !isEnabledFor(player);
-          setEnabledFor(player, next);
-          player.sendMessage(`§7[Vantage] §rDynamic first-person body ${next ? "§aenabled" : "§cdisabled"}§r.`);
-        });
-        return { status: CustomCommandStatus.Success };
-      }
+      meta("vantage:toggle", "Toggles the Vantage first-person body on or off."),
+      (origin) => run(origin, (player) => toggleVantage(player))
     );
+
     registry.registerCommand(
-      {
-        name: "vantage:config",
-        description: "Opens the Vantage camera & body settings form.",
-        permissionLevel: CommandPermissionLevel.Any,
-        cheatsRequired: false,
-      },
-      (origin) => {
-        const player = originAsPlayer(origin);
-        if (!player) return failure("This command can only be used by a player.");
-        system.run(() => showSettingsMenu(player));
-        return { status: CustomCommandStatus.Success };
-      }
+      meta("vantage:config", "Opens the Vantage camera & body settings."),
+      (origin) => run(origin, (player) => showSettingsMenu(player))
     );
   });
+
+  return true;
 }
+
 /**
- * @param {import("@minecraft/server").CustomCommandOrigin} origin
- * @returns {import("@minecraft/server").Player|undefined}
+ * Command callbacks execute in a read-only context, so the actual work
+ * is deferred to `system.run`.
  */
-function originAsPlayer(origin) {
-  return origin.sourceEntity instanceof Player ? origin.sourceEntity : undefined;
-}
-function failure(message) {
-  return { status: CustomCommandStatus.Failure, message };
+function run(origin, action) {
+  const player = origin.sourceEntity instanceof Player ? origin.sourceEntity : undefined;
+  if (!player) {
+    return { status: CustomCommandStatus.Failure, message: "This command can only be used by a player." };
+  }
+  system.run(() => {
+    try {
+      if (player.isValid) action(player);
+    } catch (_err) {
+      /* non-fatal */
+    }
+  });
+  return { status: CustomCommandStatus.Success };
 }
