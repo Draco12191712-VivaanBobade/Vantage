@@ -16,21 +16,22 @@
 			]
 		},
 		"license": "MPL-2.0 (Mozilla Public License v2.0)",
-		"url": "https://github.com/Draco12191712-VivaanBobade/Vantage"
+		"url": "https://github.com/Draco12191712-VivaanBobade/Vantage",
+		"product_type": "addon"
 	},
 	"header": {
 		"name": "§9§lVantage§r Behaviors",
-		"description": "§b§lVantage§r §7is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more.§r\n\n§e§lBUILD DETAILS:§r §7v0.1.2, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0830§r",
+		"description": "§b§lVantage§r §7is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more.§r\n\n§e§lBUILD DETAILS:§r §7v0.1.2, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0830.3§r",
 		"min_engine_version": [
 			1,
-			26,
-			0
+			21,
+			100
 		],
 		"uuid": "df9c5a01-48bd-4bf3-94e0-8e4ba56af13b",
 		"version": [
-			0,
 			1,
-			2
+			0,
+			0
 		]
 	},
 	"modules": [
@@ -40,9 +41,9 @@
 			"type": "data",
 			"uuid": "9bbf8315-5afb-4398-a303-db404c9cb039",
 			"version": [
-				0,
 				1,
-				2
+				0,
+				0
 			]
 		},
 		{
@@ -51,9 +52,9 @@
 			"uuid": "b3c48929-c09a-4fe7-a57b-3f9e93672673",
 			"entry": "scripts/main.js",
 			"version": [
-				0,
 				1,
-				2
+				0,
+				0
 			]
 		}
 	],
@@ -69,9 +70,9 @@
 		{
 			"uuid": "32a52da7-56df-4241-b6cd-066b88d5b2aa",
 			"version": [
-				0,
 				1,
-				2
+				0,
+				0
 			]
 		}
 	]

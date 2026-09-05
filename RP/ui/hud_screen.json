@@ -1,0 +1,55 @@
+{
+	"namespace": "vantage",
+	"vantage_hud_badge": {
+		"type": "image",
+		"texture": "textures/ui/vantage_toggle_off",
+		"size": [
+			16,
+			16
+		],
+		"anchor_from": "bottom_left",
+		"anchor_to": "bottom_left",
+		"offset": [
+			6,
+			-6
+		],
+		"layer": 5,
+		"alpha": 0.85
+	},
+	"vantage_hud_label": {
+		"type": "label",
+		"text": "/vantage",
+		"font_size": "small",
+		"color": [
+			0.85,
+			0.85,
+			0.85
+		],
+		"alpha": 0.7,
+		"anchor_from": "bottom_left",
+		"anchor_to": "bottom_left",
+		"offset": [
+			24,
+			-8
+		],
+		"layer": 5
+	},
+	"hud_screen": {
+		"modifications": [
+			{
+				"array_name": "controls",
+				"operation": "insert_back",
+				"value": {
+					"vantage_hud_badge@vantage.vantage_hud_badge": {}
+				}
+			},
+			{
+				"array_name": "controls",
+				"operation": "insert_back",
+				"value": {
+					"vantage_hud_label@vantage.vantage_hud_label": {}
+				}
+			}
+		]
+	}
+}
