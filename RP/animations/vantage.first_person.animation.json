@@ -1,0 +1,92 @@
+{
+	"format_version": "1.10.0",
+	"animations": {
+		"animation.vantage.first_person.close": {
+			"loop": true,
+			"bones": {
+				"head": {
+					"scale": "(q.is_in_ui || !q.is_local_player) ? 1.0 : 0.0"
+				},
+				"waist": {
+					"position": [
+						0.0,
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : ((q.is_sneaking ? -3.0 : 0.0) - math.clamp(math.abs(q.head_x_rotation(0)) * 0.02, 0.0, 2.0))",
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : 3.5"
+					]
+				},
+				"leftleg": {
+					"position": [
+						0.0,
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : ((q.is_sneaking ? -3.0 : 0.0) - math.clamp(math.abs(q.head_x_rotation(0)) * 0.02, 0.0, 2.0))",
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : 3.5"
+					]
+				},
+				"rightleg": {
+					"position": [
+						0.0,
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : ((q.is_sneaking ? -3.0 : 0.0) - math.clamp(math.abs(q.head_x_rotation(0)) * 0.02, 0.0, 2.0))",
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : 3.5"
+					]
+				}
+			}
+		},
+		"animation.vantage.first_person.normal": {
+			"loop": true,
+			"bones": {
+				"head": {
+					"scale": "(q.is_in_ui || !q.is_local_player) ? 1.0 : 0.0"
+				},
+				"waist": {
+					"position": [
+						0.0,
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : ((q.is_sneaking ? -3.0 : 0.0) - math.clamp(math.abs(q.head_x_rotation(0)) * 0.02, 0.0, 2.0))",
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : 5.5"
+					]
+				},
+				"leftleg": {
+					"position": [
+						0.0,
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : ((q.is_sneaking ? -3.0 : 0.0) - math.clamp(math.abs(q.head_x_rotation(0)) * 0.02, 0.0, 2.0))",
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : 5.5"
+					]
+				},
+				"rightleg": {
+					"position": [
+						0.0,
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : ((q.is_sneaking ? -3.0 : 0.0) - math.clamp(math.abs(q.head_x_rotation(0)) * 0.02, 0.0, 2.0))",
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : 5.5"
+					]
+				}
+			}
+		},
+		"animation.vantage.first_person.far": {
+			"loop": true,
+			"bones": {
+				"head": {
+					"scale": "(q.is_in_ui || !q.is_local_player) ? 1.0 : 0.0"
+				},
+				"waist": {
+					"position": [
+						0.0,
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : ((q.is_sneaking ? -3.0 : 0.0) - math.clamp(math.abs(q.head_x_rotation(0)) * 0.02, 0.0, 2.0))",
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : 8.0"
+					]
+				},
+				"leftleg": {
+					"position": [
+						0.0,
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : ((q.is_sneaking ? -3.0 : 0.0) - math.clamp(math.abs(q.head_x_rotation(0)) * 0.02, 0.0, 2.0))",
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : 8.0"
+					]
+				},
+				"rightleg": {
+					"position": [
+						0.0,
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : ((q.is_sneaking ? -3.0 : 0.0) - math.clamp(math.abs(q.head_x_rotation(0)) * 0.02, 0.0, 2.0))",
+						"(q.is_in_ui || !q.is_local_player) || q.is_swimming ? 0.0 : 8.0"
+					]
+				}
+			}
+		}
+	}
+}

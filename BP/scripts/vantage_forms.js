@@ -1,111 +1,140 @@
 /**
-* Vantage - Quick Toggle Input (Sneak + Jump)
+* Vantage - Menus
 * ------------------------------------------------------------------
-* WHY THIS EXISTS INSTEAD OF A CLICKABLE HUD BUTTON
+* `@minecraft/server-ui` forms are the Bedrock UI system's supported
+* surface for click-driven, script-backed interaction, and
+* `ActionFormData.button(text, iconPath)` is what puts the supplied
+* toggle artwork on a control that can actually carry a click back
+* into script. The engine renders and input-maps these per platform,
+* so touch, gamepad, and keyboard & mouse all work with no
+* platform-specific code.
 *
-* A resource-pack JSON UI control cannot invoke behavior-pack script.
-* Data-driven UI is a display and navigation layer: its `button`
-* controls bind only to a fixed set of engine-recognised actions, and
-* there is no binding that dispatches a developer-defined callback.
-* The HUD badge Vantage ships is therefore a status/hint glyph, not a
-* click target - and a custom screen-space button would also be
-* unreachable by gamepad focus, so it would have been worse than
-* useless on controller anyway.
-*
-* `world.afterEvents.playerButtonInput` is the supported way to read a
-* real input, and it reports Jump/Sneak identically on touch, gamepad,
-* and keyboard & mouse - which is exactly the input parity target.
-* PC players who want a dedicated key can additionally bind
-* `/vantage:toggle` to a command macro in Settings > Keyboard & Mouse.
-*
-* Guard rails: the combo requires Sneak to already be held when Jump
-* goes down, is rate-limited so a held jump cannot flicker the view,
-* and can be switched off in the settings menu for players who
-* sneak-jump often enough to trip it by accident.
+* Every `show()` is awaited inside a caller that runs under
+* `system.run`, because forms cannot be opened from a read-only event
+* context.
 */
 
-import { world, system, InputButton, ButtonState } from "@minecraft/server";
-import { getPlayerConfig, isEnabledFor, setEnabledFor } from "./vantage_config.js";
-import { forceDeactivate } from "./vantage_camera.js";
+import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
+import {
+  getPlayerConfig,
+  setPlayerConfig,
+  createDefaultConfig,
+  isEnabledFor,
+  clamp,
+  BODY_DISTANCE_LABELS,
+  ADDON_VERSION,
+} from "./vantage_config.js";
+import { toggleVantage } from "./vantage_input.js";
 
-const COOLDOWN_TICKS = 10;
+const ICON_ON = "textures/ui/vantage_toggle_on";
+const ICON_OFF = "textures/ui/vantage_toggle_off";
 
-/** @type {Map<string, number>} */
-const lastToggleTick = new Map();
+/** @param {import("@minecraft/server").Player} player */
+export async function showMainMenu(player) {
+  const enabled = isEnabledFor(player);
 
-/**
- * @param {import("@minecraft/server").Player} player
- * @returns {boolean} the new enabled state
- */
-export function toggleVantage(player) {
-  const next = !isEnabledFor(player);
-  setEnabledFor(player, next);
-  if (!next) forceDeactivate(player);
-  announce(player, next);
-  return next;
+  const form = new ActionFormData()
+    .title("Vantage")
+    .body(
+      `First-person body: ${enabled ? "§aON§r" : "§cOFF§r"}\n` +
+      "§7Quick toggle: Sneak + Jump§r\n" +
+      `§8v${ADDON_VERSION}§r`
+    )
+    .button(enabled ? "Turn Off" : "Turn On", enabled ? ICON_OFF : ICON_ON)
+    .button("Camera & Body Settings")
+    .button("Reset to Defaults");
+
+  const response = await form.show(player);
+  if (response.canceled || response.selection === undefined) return;
+
+  if (response.selection === 0) {
+    toggleVantage(player);
+    return;
+  }
+  if (response.selection === 1) {
+    await showSettingsMenu(player);
+    return;
+  }
+  await confirmReset(player);
 }
 
 /** @param {import("@minecraft/server").Player} player */
-export function announce(player, enabled) {
-  const text = enabled ? "§aVantage: first-person body ON" : "§7Vantage: first-person body OFF";
-  try {
-    player.onScreenDisplay.setActionBar(text);
-  } catch (_err) {
-    try {
-      player.sendMessage(text);
-    } catch (_err2) {
-      /* non-fatal */
-    }
-  }
+export async function showSettingsMenu(player) {
+  const cfg = getPlayerConfig(player);
+
+  // NOTE: no divider()/header()/label() calls here on purpose. Those are
+  // non-interactive elements and the stable docs do not state whether they
+  // occupy a slot in `formValues`. If they do, every index below shifts and
+  // the wrong value lands in the wrong setting. Interactive controls only
+  // keeps the response mapping unambiguous on every runtime version.
+  // `dropdown` takes `defaultValueIndex`, NOT `defaultValue`.
+  const form = new ModalFormData()
+    .title("Vantage - Camera & Body")
+    .toggle("Show first-person body", { defaultValue: cfg.bodyVisible })
+    .toggle("Hide my own head", {
+      defaultValue: cfg.headHideEnabled,
+      tooltip: "Keeps your head from filling the lens. Only you see this.",
+    })
+    .dropdown("Body distance", BODY_DISTANCE_LABELS, {
+      defaultValueIndex: clamp(cfg.bodyDistance, 0, 2) | 0,
+      tooltip: "How far your torso and legs sit from the camera.",
+    })
+    .toggle("Quick toggle: Sneak + Jump", { defaultValue: cfg.quickToggleEnabled })
+    .slider("Camera offset - forward/back", -30, 30, {
+      defaultValue: Math.round(cfg.baseOffset.z * 100),
+      valueStep: 1,
+      tooltip: "Hundredths of a block.",
+    })
+    .slider("Camera offset - up/down", -30, 30, {
+      defaultValue: Math.round(cfg.baseOffset.y * 100),
+      valueStep: 1,
+    })
+    .slider("Camera offset - left/right", -30, 30, {
+      defaultValue: Math.round(cfg.baseOffset.x * 100),
+      valueStep: 1,
+    })
+    .toggle("Override field of view", { defaultValue: cfg.fovOverrideEnabled })
+    .slider("Field of view (degrees)", 30, 110, {
+      defaultValue: clamp(cfg.fovDegrees, 30, 110),
+      valueStep: 1,
+    })
+    .toggle("Vanilla view while gliding", { defaultValue: cfg.fallbackWhileGliding })
+    .toggle("Vanilla view while holding a spyglass", { defaultValue: cfg.fallbackWhileSpyglass });
+
+  const response = await form.show(player);
+  if (response.canceled || !response.formValues) return;
+
+  const v = response.formValues;
+  let i = 0;
+  cfg.bodyVisible = Boolean(v[i++]);
+  cfg.headHideEnabled = Boolean(v[i++]);
+  cfg.bodyDistance = clamp(Number(v[i++]), 0, 2) | 0;
+  cfg.quickToggleEnabled = Boolean(v[i++]);
+  cfg.baseOffset = {
+    z: clamp(Number(v[i++]) / 100, -0.3, 0.3),
+    y: clamp(Number(v[i++]) / 100, -0.3, 0.3),
+    x: clamp(Number(v[i++]) / 100, -0.3, 0.3),
+  };
+  cfg.fovOverrideEnabled = Boolean(v[i++]);
+  cfg.fovDegrees = clamp(Number(v[i++]), 30, 110);
+  cfg.fallbackWhileGliding = Boolean(v[i++]);
+  cfg.fallbackWhileSpyglass = Boolean(v[i++]);
+
+  const saved = setPlayerConfig(player, cfg);
+  player.sendMessage(saved ? "§7[Vantage] Settings saved." : "§c[Vantage] Could not save settings.");
 }
 
-/**
- * @returns {boolean} false when the platform does not expose button
- * input, so the caller can report the degraded state instead of the
- * feature failing silently.
- */
-export function registerQuickToggle() {
-  const signal = world.afterEvents?.playerButtonInput;
-  if (!signal?.subscribe) return false;
+/** @param {import("@minecraft/server").Player} player */
+async function confirmReset(player) {
+  const form = new ActionFormData()
+    .title("Vantage - Reset")
+    .body("Reset all Vantage settings for you to their defaults?")
+    .button("Cancel")
+    .button("Reset");
 
-  signal.subscribe((event) => {
-    try {
-      if (event.button !== InputButton.Jump) return;
-      if (event.newButtonState !== ButtonState.Pressed) return;
+  const response = await form.show(player);
+  if (response.canceled || response.selection !== 1) return;
 
-      const player = event.player;
-      if (!player?.isValid) return;
-
-      // Sneak must already be held. `inputInfo` is the authoritative
-      // read; `isSneaking` is the fallback on builds that predate it.
-      let sneaking = false;
-      try {
-        sneaking = player.inputInfo?.getButtonState(InputButton.Sneak) === ButtonState.Pressed;
-      } catch (_err) {
-        sneaking = false;
-      }
-      if (!sneaking) sneaking = player.isSneaking === true;
-      if (!sneaking) return;
-
-      if (!getPlayerConfig(player).quickToggleEnabled) return;
-
-      const now = system.currentTick;
-      const last = lastToggleTick.get(player.id) ?? -Infinity;
-      if (now - last < COOLDOWN_TICKS) return;
-      lastToggleTick.set(player.id, now);
-
-      system.run(() => {
-        if (player.isValid) toggleVantage(player);
-      });
-    } catch (_err) {
-      /* never let an input handler take the add-on down */
-    }
-  });
-
-  return true;
-}
-
-/** @param {string} playerId */
-export function forgetPlayer(playerId) {
-  lastToggleTick.delete(playerId);
+  setPlayerConfig(player, createDefaultConfig());
+  player.sendMessage("§7[Vantage] Settings reset to defaults.");
 }
