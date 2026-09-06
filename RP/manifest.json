@@ -21,7 +21,7 @@
     },
     "header": {
         "name": "§9§lVantage§r Resources",
-        "description": "§b§lVantage§r §7is a lightweight, compatibility-focused dynamic first-person add-on for Minecraft Bedrock. Adds full, native-feeling animations, customizable camera positioning, body visibility, FOV support, crawling, swimming, sneaking, riding, and more.§r\n\n§e§lBUILD DETAILS:§r §7v1.0.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0905.1§r",
+        "description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! It's made to make first-person feel more natural without changing the way Minecraft feels. You see your own body when you look down — legs, torso, arms, armor, your skin, your cape — and everything else about the game stays exactly where you left it.§r\n\n§e§lBUILD DETAILS:§r §7v1.0.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0905.3§r",
         "min_engine_version": [
             1,
             21,
