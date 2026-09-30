@@ -3,6 +3,7 @@
 	"minecraft:camera_preset": {
 		"identifier": "vantage:pov",
 		"inherit_from": "minecraft:follow_orbit",
-		"radius": 0.1
+		"radius": 0.1,
+		"player_effects": true
 	}
 }

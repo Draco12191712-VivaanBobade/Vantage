@@ -21,16 +21,16 @@
     },
     "header": {
         "name": "§9§lVantage§r Resources",
-        "description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! It's made to make first-person feel more natural without changing the way Minecraft feels. You see your own body when you look down — legs, torso, arms, armor, your skin, your cape — and everything else about the game stays exactly where you left it.§r\n\n§e§lBUILD DETAILS:§r §7v1.0.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0905.3§r",
+        "description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! It's made to make first-person feel more natural without changing the way Minecraft feels. You see your own body when you look down — legs, torso, arms, armor, your skin — and everything else about the game stays exactly where you left it.§r\n\n§e§lBUILD DETAILS:§r §7v1.1.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0928.1§r",
         "min_engine_version": [
             1,
             21,
-            100
+            110
         ],
         "uuid": "32a52da7-56df-4241-b6cd-066b88d5b2aa",
         "version": [
             1,
-            0,
+            1,
             0
         ]
     },
@@ -42,7 +42,7 @@
             "uuid": "fc8375d2-5a87-488e-ab81-2374f6cc453b",
             "version": [
                 1,
-                0,
+                1,
                 0
             ]
         }
@@ -52,7 +52,7 @@
             "uuid": "df9c5a01-48bd-4bf3-94e0-8e4ba56af13b",
             "version": [
                 1,
-                0,
+                1,
                 0
             ]
         }

@@ -1,0 +1,9 @@
+{
+	"resource_pack_name": "vantage",
+	"texture_name": "atlas.items",
+	"texture_data": {
+		"vantage_lens": {
+			"textures": "textures/items/vantage_lens"
+		}
+	}
+}

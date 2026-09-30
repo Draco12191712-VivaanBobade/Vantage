@@ -4,28 +4,38 @@
 		"animation.vantage.body.close": {
 			"loop": true,
 			"bones": {
+				"root": {
+					"rotation": [
+						0,
+						"q.is_in_ui || q.is_riding || q.is_swimming || q.is_sleeping || q.is_emoting ? 0 : q.target_y_rotation",
+						0
+					]
+				},
 				"head": {
+					"scale": "q.is_in_ui ? 1.0 : 0.0"
+				},
+				"cape": {
 					"scale": "q.is_in_ui ? 1.0 : 0.0"
 				},
 				"waist": {
 					"position": [
 						0,
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : (-2 + (q.head_x_rotation(0) < 0 ? (q.head_x_rotation(0) / 30) * 2 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : 4"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 5.5"
 					]
 				},
 				"leftLeg": {
 					"position": [
 						0,
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : (-2 + (q.head_x_rotation(0) < 0 ? (q.head_x_rotation(0) / 30) * 2 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : 4"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 5.5"
 					]
 				},
 				"rightLeg": {
 					"position": [
 						0,
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : (-2 + (q.head_x_rotation(0) < 0 ? (q.head_x_rotation(0) / 30) * 2 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : 4"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 5.5"
 					]
 				}
 			}
@@ -33,28 +43,38 @@
 		"animation.vantage.body.normal": {
 			"loop": true,
 			"bones": {
+				"root": {
+					"rotation": [
+						0,
+						"q.is_in_ui || q.is_riding || q.is_swimming || q.is_sleeping || q.is_emoting ? 0 : q.target_y_rotation",
+						0
+					]
+				},
 				"head": {
+					"scale": "q.is_in_ui ? 1.0 : 0.0"
+				},
+				"cape": {
 					"scale": "q.is_in_ui ? 1.0 : 0.0"
 				},
 				"waist": {
 					"position": [
 						0,
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : (-2 + (q.head_x_rotation(0) < 0 ? (q.head_x_rotation(0) / 30) * 2 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : 6"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 7"
 					]
 				},
 				"leftLeg": {
 					"position": [
 						0,
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : (-2 + (q.head_x_rotation(0) < 0 ? (q.head_x_rotation(0) / 30) * 2 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : 6"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 7"
 					]
 				},
 				"rightLeg": {
 					"position": [
 						0,
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : (-2 + (q.head_x_rotation(0) < 0 ? (q.head_x_rotation(0) / 30) * 2 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : 6"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 7"
 					]
 				}
 			}
@@ -62,28 +82,140 @@
 		"animation.vantage.body.far": {
 			"loop": true,
 			"bones": {
+				"root": {
+					"rotation": [
+						0,
+						"q.is_in_ui || q.is_riding || q.is_swimming || q.is_sleeping || q.is_emoting ? 0 : q.target_y_rotation",
+						0
+					]
+				},
 				"head": {
+					"scale": "q.is_in_ui ? 1.0 : 0.0"
+				},
+				"cape": {
 					"scale": "q.is_in_ui ? 1.0 : 0.0"
 				},
 				"waist": {
 					"position": [
 						0,
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : (-2 + (q.head_x_rotation(0) < 0 ? (q.head_x_rotation(0) / 30) * 2 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : 9"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 9"
 					]
 				},
 				"leftLeg": {
 					"position": [
 						0,
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : (-2 + (q.head_x_rotation(0) < 0 ? (q.head_x_rotation(0) / 30) * 2 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : 9"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 9"
 					]
 				},
 				"rightLeg": {
 					"position": [
 						0,
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : (-2 + (q.head_x_rotation(0) < 0 ? (q.head_x_rotation(0) / 30) * 2 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui ? 0 : q.is_swimming ? 0 : 9"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 9"
+					]
+				}
+			}
+		},
+		"animation.vantage.epic.arms": {
+			"loop": true,
+			"bones": {
+				"root": {
+					"rotation": [
+						0,
+						"q.is_in_ui || q.is_riding || q.is_swimming || q.is_sleeping || q.is_emoting ? 0 : q.target_y_rotation",
+						0
+					]
+				},
+				"head": {
+					"scale": "q.is_in_ui ? 1.0 : 0.0"
+				},
+				"cape": {
+					"scale": "q.is_in_ui ? 1.0 : 0.0"
+				},
+				"waist": {
+					"position": [
+						0,
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 7"
+					]
+				},
+				"leftLeg": {
+					"position": [
+						0,
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 7"
+					]
+				},
+				"rightLeg": {
+					"position": [
+						0,
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 7"
+					]
+				},
+				"rightArm": {
+					"position": [
+						0,
+						"q.is_in_ui || q.is_swimming || q.is_riding ? 0 : 1",
+						"q.is_in_ui || q.is_swimming || q.is_riding ? 0 : -4"
+					],
+					"rotation": [
+						"q.is_in_ui || q.is_swimming || q.is_riding || q.blocking ? 0 : (-62 + math.clamp(q.target_x_rotation, -40, 70) * 0.3)",
+						0,
+						0
+					]
+				},
+				"leftArm": {
+					"position": [
+						0,
+						"q.is_in_ui || q.is_swimming || q.is_riding ? 0 : 1",
+						"q.is_in_ui || q.is_swimming || q.is_riding ? 0 : -4"
+					],
+					"rotation": [
+						"q.is_in_ui || q.is_swimming || q.is_riding || q.blocking ? 0 : (-48 + math.clamp(q.target_x_rotation, -40, 70) * 0.3)",
+						0,
+						0
+					]
+				}
+			}
+		},
+		"animation.vantage.epic.body": {
+			"loop": true,
+			"bones": {
+				"root": {
+					"rotation": [
+						0,
+						"q.is_in_ui || q.is_riding || q.is_swimming || q.is_sleeping || q.is_emoting ? 0 : q.target_y_rotation",
+						0
+					]
+				},
+				"head": {
+					"scale": "q.is_in_ui ? 1.0 : 0.0"
+				},
+				"cape": {
+					"scale": "q.is_in_ui ? 1.0 : 0.0"
+				},
+				"waist": {
+					"position": [
+						0,
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 7"
+					]
+				},
+				"leftLeg": {
+					"position": [
+						0,
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 7"
+					]
+				},
+				"rightLeg": {
+					"position": [
+						0,
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
+						"q.is_in_ui || q.is_swimming ? 0 : 7"
 					]
 				}
 			}
@@ -92,7 +224,17 @@
 			"loop": false,
 			"animation_length": 0.05,
 			"bones": {
+				"root": {
+					"rotation": [
+						0,
+						0,
+						0
+					]
+				},
 				"head": {
+					"scale": 1.0
+				},
+				"cape": {
 					"scale": 1.0
 				},
 				"waist": {
@@ -111,6 +253,30 @@
 				},
 				"rightLeg": {
 					"position": [
+						0,
+						0,
+						0
+					]
+				},
+				"rightArm": {
+					"position": [
+						0,
+						0,
+						0
+					],
+					"rotation": [
+						0,
+						0,
+						0
+					]
+				},
+				"leftArm": {
+					"position": [
+						0,
+						0,
+						0
+					],
+					"rotation": [
 						0,
 						0,
 						0
