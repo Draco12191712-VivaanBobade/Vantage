@@ -15,27 +15,27 @@
 					"scale": "q.is_in_ui ? 1.0 : 0.0"
 				},
 				"cape": {
-					"scale": "q.is_in_ui ? 1.0 : 0.0"
+					"scale": "q.is_in_ui || q.is_pack_setting_enabled('vantage:show_cape') ? 1.0 : 0.0"
 				},
 				"waist": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 5.5"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
+						"q.is_in_ui || q.is_swimming ? 0 : (5.5 + q.get_pack_setting('vantage:body_back'))"
 					]
 				},
 				"leftLeg": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 5.5"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
+						"q.is_in_ui || q.is_swimming ? 0 : (5.5 + q.get_pack_setting('vantage:body_back'))"
 					]
 				},
 				"rightLeg": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 5.5"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
+						"q.is_in_ui || q.is_swimming ? 0 : (5.5 + q.get_pack_setting('vantage:body_back'))"
 					]
 				}
 			}
@@ -54,27 +54,27 @@
 					"scale": "q.is_in_ui ? 1.0 : 0.0"
 				},
 				"cape": {
-					"scale": "q.is_in_ui ? 1.0 : 0.0"
+					"scale": "q.is_in_ui || q.is_pack_setting_enabled('vantage:show_cape') ? 1.0 : 0.0"
 				},
 				"waist": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 7"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
+						"q.is_in_ui || q.is_swimming ? 0 : (7 + q.get_pack_setting('vantage:body_back'))"
 					]
 				},
 				"leftLeg": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 7"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
+						"q.is_in_ui || q.is_swimming ? 0 : (7 + q.get_pack_setting('vantage:body_back'))"
 					]
 				},
 				"rightLeg": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 7"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
+						"q.is_in_ui || q.is_swimming ? 0 : (7 + q.get_pack_setting('vantage:body_back'))"
 					]
 				}
 			}
@@ -93,27 +93,27 @@
 					"scale": "q.is_in_ui ? 1.0 : 0.0"
 				},
 				"cape": {
-					"scale": "q.is_in_ui ? 1.0 : 0.0"
+					"scale": "q.is_in_ui || q.is_pack_setting_enabled('vantage:show_cape') ? 1.0 : 0.0"
 				},
 				"waist": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 9"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
+						"q.is_in_ui || q.is_swimming ? 0 : (9 + q.get_pack_setting('vantage:body_back'))"
 					]
 				},
 				"leftLeg": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 9"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
+						"q.is_in_ui || q.is_swimming ? 0 : (9 + q.get_pack_setting('vantage:body_back'))"
 					]
 				},
 				"rightLeg": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 9"
+						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
+						"q.is_in_ui || q.is_swimming ? 0 : (9 + q.get_pack_setting('vantage:body_back'))"
 					]
 				}
 			}
@@ -132,56 +132,48 @@
 					"scale": "q.is_in_ui ? 1.0 : 0.0"
 				},
 				"cape": {
-					"scale": "q.is_in_ui ? 1.0 : 0.0"
+					"scale": "q.is_in_ui || q.is_pack_setting_enabled('vantage:show_cape') ? 1.0 : 0.0"
 				},
-				"waist": {
+				"body": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 7"
+						"q.is_in_ui ? 0 : (math.clamp(q.target_x_rotation, 0, 90) / 9)",
+						"q.is_in_ui ? 0 : 8"
 					]
 				},
 				"leftLeg": {
-					"position": [
-						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 7"
-					]
+					"scale": "q.is_in_ui || q.is_pack_setting_enabled('vantage:arm_legs') ? 1.0 : 0.0"
 				},
 				"rightLeg": {
-					"position": [
-						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 7"
-					]
+					"scale": "q.is_in_ui || q.is_pack_setting_enabled('vantage:arm_legs') ? 1.0 : 0.0"
 				},
 				"rightArm": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming || q.is_riding ? 0 : 1",
-						"q.is_in_ui || q.is_swimming || q.is_riding ? 0 : -4"
+						"q.is_in_ui ? 0 : (1 - math.clamp(q.target_x_rotation, 0, 90) / 9 + q.get_pack_setting('vantage:arm_up'))",
+						"q.is_in_ui ? 0 : (-9 - q.get_pack_setting('vantage:arm_out'))"
 					],
 					"rotation": [
-						"q.is_in_ui || q.is_swimming || q.is_riding || q.blocking ? 0 : (-62 + math.clamp(q.target_x_rotation, -40, 70) * 0.3)",
-						0,
+						"q.is_in_ui || q.is_riding || q.blocking ? 0 : (-78 + q.target_x_rotation * (q.is_pack_setting_enabled('vantage:arm_lock') ? 0.3 : 0.9) + q.get_pack_setting('vantage:arm_tilt') - (q.is_sneaking ? 22 : 0))",
+						"q.is_in_ui || q.is_riding || q.blocking ? 0 : -6",
 						0
 					]
 				},
 				"leftArm": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming || q.is_riding ? 0 : 1",
-						"q.is_in_ui || q.is_swimming || q.is_riding ? 0 : -4"
+						"q.is_in_ui ? 0 : (1 - math.clamp(q.target_x_rotation, 0, 90) / 9 + q.get_pack_setting('vantage:arm_up'))",
+						"q.is_in_ui ? 0 : (-9 - q.get_pack_setting('vantage:arm_out'))"
 					],
 					"rotation": [
-						"q.is_in_ui || q.is_swimming || q.is_riding || q.blocking ? 0 : (-48 + math.clamp(q.target_x_rotation, -40, 70) * 0.3)",
-						0,
+						"q.is_in_ui || q.is_riding || q.blocking ? 0 : (-72 + q.target_x_rotation * (q.is_pack_setting_enabled('vantage:arm_lock') ? 0.3 : 0.9) + q.get_pack_setting('vantage:arm_tilt') - (q.is_sneaking ? 22 : 0))",
+						"q.is_in_ui || q.is_riding || q.blocking ? 0 : 6",
 						0
 					]
 				}
 			}
 		},
-		"animation.vantage.epic.body": {
+		"animation.vantage.epic.free": {
 			"loop": true,
 			"bones": {
 				"root": {
@@ -195,28 +187,45 @@
 					"scale": "q.is_in_ui ? 1.0 : 0.0"
 				},
 				"cape": {
-					"scale": "q.is_in_ui ? 1.0 : 0.0"
+					"scale": "q.is_in_ui || q.is_pack_setting_enabled('vantage:show_cape') ? 1.0 : 0.0"
 				},
-				"waist": {
+				"body": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 7"
+						"q.is_in_ui ? 0 : (math.clamp(q.target_x_rotation, 0, 90) / 9)",
+						"q.is_in_ui ? 0 : 8"
 					]
 				},
 				"leftLeg": {
-					"position": [
-						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 7"
-					]
+					"scale": "q.is_in_ui || q.is_pack_setting_enabled('vantage:arm_legs') ? 1.0 : 0.0"
 				},
 				"rightLeg": {
+					"scale": "q.is_in_ui || q.is_pack_setting_enabled('vantage:arm_legs') ? 1.0 : 0.0"
+				},
+				"rightArm": {
 					"position": [
 						0,
-						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0))",
-						"q.is_in_ui || q.is_swimming ? 0 : 7"
+						"q.is_in_ui ? 0 : (0 - math.clamp(q.target_x_rotation, 0, 90) / 9)",
+						"q.is_in_ui ? 0 : -8"
 					]
+				},
+				"leftArm": {
+					"position": [
+						0,
+						"q.is_in_ui ? 0 : (0 - math.clamp(q.target_x_rotation, 0, 90) / 9)",
+						"q.is_in_ui ? 0 : -8"
+					]
+				}
+			}
+		},
+		"animation.vantage.head": {
+			"loop": true,
+			"bones": {
+				"head": {
+					"scale": "q.is_in_ui ? 1.0 : 0.0"
+				},
+				"cape": {
+					"scale": "q.is_in_ui || q.is_pack_setting_enabled('vantage:show_cape') ? 1.0 : 0.0"
 				}
 			}
 		},
@@ -244,19 +253,28 @@
 						0
 					]
 				},
-				"leftLeg": {
+				"body": {
 					"position": [
 						0,
 						0,
 						0
 					]
 				},
+				"leftLeg": {
+					"position": [
+						0,
+						0,
+						0
+					],
+					"scale": 1.0
+				},
 				"rightLeg": {
 					"position": [
 						0,
 						0,
 						0
-					]
+					],
+					"scale": 1.0
 				},
 				"rightArm": {
 					"position": [
