@@ -1,0 +1,143 @@
+{
+	"namespace": "hud",
+	"vantage_xh_data": {
+		"type": "panel",
+		"size": [
+			0,
+			0
+		],
+		"$vantage_xh_key": "§v§u§t",
+		"property_bag": {
+			"#vantage_xh_text": ""
+		},
+		"bindings": [
+			{
+				"binding_name": "#hud_title_text_string"
+			},
+			{
+				"binding_name": "#hud_title_text_string",
+				"binding_name_override": "#vantage_xh_text",
+				"binding_condition": "visibility_changed"
+			},
+			{
+				"binding_type": "view",
+				"source_property_name": "(not (#hud_title_text_string = #vantage_xh_text) and not ((#hud_title_text_string - $vantage_xh_key) = #hud_title_text_string))",
+				"target_property_name": "#visible"
+			}
+		]
+	},
+	"vantage_xh_vanilla": {
+		"type": "image",
+		"texture": "textures/gui/icons",
+		"anchor_from": "center",
+		"anchor_to": "center",
+		"size": [
+			15,
+			15
+		],
+		"layer": 3,
+		"visible": false,
+		"bindings": [
+			{
+				"binding_type": "view",
+				"source_control_name": "vantage_xh_data",
+				"source_property_name": "(#vantage_xh_text = '§v§u§t§1')",
+				"target_property_name": "#visible"
+			}
+		],
+		"uv": [
+			0,
+			0
+		],
+		"uv_size": [
+			15,
+			15
+		],
+		"alpha": 0.9
+	},
+	"vantage_xh_dot": {
+		"type": "image",
+		"texture": "textures/ui/vantage/crosshair_dot",
+		"anchor_from": "center",
+		"anchor_to": "center",
+		"size": [
+			15,
+			15
+		],
+		"layer": 3,
+		"visible": false,
+		"bindings": [
+			{
+				"binding_type": "view",
+				"source_control_name": "vantage_xh_data",
+				"source_property_name": "(#vantage_xh_text = '§v§u§t§2')",
+				"target_property_name": "#visible"
+			}
+		]
+	},
+	"vantage_xh_plus": {
+		"type": "image",
+		"texture": "textures/ui/vantage/crosshair_plus",
+		"anchor_from": "center",
+		"anchor_to": "center",
+		"size": [
+			15,
+			15
+		],
+		"layer": 3,
+		"visible": false,
+		"bindings": [
+			{
+				"binding_type": "view",
+				"source_control_name": "vantage_xh_data",
+				"source_property_name": "(#vantage_xh_text = '§v§u§t§3')",
+				"target_property_name": "#visible"
+			}
+		]
+	},
+	"vantage_xh_circle": {
+		"type": "image",
+		"texture": "textures/ui/vantage/crosshair_circle",
+		"anchor_from": "center",
+		"anchor_to": "center",
+		"size": [
+			15,
+			15
+		],
+		"layer": 3,
+		"visible": false,
+		"bindings": [
+			{
+				"binding_type": "view",
+				"source_control_name": "vantage_xh_data",
+				"source_property_name": "(#vantage_xh_text = '§v§u§t§4')",
+				"target_property_name": "#visible"
+			}
+		]
+	},
+	"root_panel": {
+		"modifications": [
+			{
+				"array_name": "controls",
+				"operation": "insert_back",
+				"value": [
+					{
+						"vantage_xh_data@hud.vantage_xh_data": {}
+					},
+					{
+						"vantage_xh_vanilla@hud.vantage_xh_vanilla": {}
+					},
+					{
+						"vantage_xh_dot@hud.vantage_xh_dot": {}
+					},
+					{
+						"vantage_xh_plus@hud.vantage_xh_plus": {}
+					},
+					{
+						"vantage_xh_circle@hud.vantage_xh_circle": {}
+					}
+				]
+			}
+		]
+	}
+}
