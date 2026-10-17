@@ -1,5 +1,5 @@
 {
-	"format_version": 2,
+	"format_version": 3,
 	"metadata": {
 		"authors": [
 			"Draco12191712 (Vivaan Bobade)"
@@ -21,18 +21,10 @@
 	},
 	"header": {
 		"name": "§9§lVantage§r Behaviors",
-		"description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! It's made to make first-person feel more natural without changing the way Minecraft feels. You see your own body when you look down — legs, torso, arms, armor, your skin — and everything else about the game stays exactly where you left it.§r\n\n§e§lBUILD DETAILS:§r §7v1.1.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0928.1§r",
-		"min_engine_version": [
-			1,
-			21,
-			110
-		],
+		"description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.1.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1018.1§r",
+		"min_engine_version": "1.26.0",
 		"uuid": "df9c5a01-48bd-4bf3-94e0-8e4ba56af13b",
-		"version": [
-			1,
-			1,
-			0
-		]
+		"version": "2.1.0"
 	},
 	"modules": [
 		{
@@ -40,40 +32,259 @@
 			"description": "Behavior module assets for Vantage",
 			"type": "data",
 			"uuid": "9bbf8315-5afb-4398-a303-db404c9cb039",
-			"version": [
-				1,
-				1,
-				0
-			]
+			"version": "2.1.0"
 		},
 		{
 			"type": "script",
 			"language": "javascript",
 			"uuid": "b3c48929-c09a-4fe7-a57b-3f9e93672673",
 			"entry": "scripts/main.js",
-			"version": [
-				1,
-				1,
-				0
-			]
+			"version": "2.1.0"
 		}
 	],
 	"dependencies": [
 		{
 			"module_name": "@minecraft/server",
-			"version": "2.2.0"
+			"version": "2.10.0"
 		},
 		{
 			"module_name": "@minecraft/server-ui",
-			"version": "2.0.0"
+			"version": "2.2.0"
 		},
 		{
 			"uuid": "32a52da7-56df-4241-b6cd-066b88d5b2aa",
-			"version": [
-				1,
-				1,
-				0
-			]
+			"version": "2.1.0"
+		}
+	],
+	"settings": [
+		{
+			"type": "label",
+			"text": "§9§lVantage§r §7world settings! Players can still change their own stuff with §f/vantage§7 unless you lock it here"
+		},
+		{
+			"type": "toggle",
+			"text": "Vantage is on for new players",
+			"name": "vantage:on_by_default",
+			"default": true
+		},
+		{
+			"type": "dropdown",
+			"text": "Starting view",
+			"name": "vantage:default_view",
+			"options": [
+				{
+					"name": "body",
+					"text": "Full Body"
+				},
+				{
+					"name": "epic",
+					"text": "Epic Fight (two arms)"
+				},
+				{
+					"name": "third",
+					"text": "Third Person"
+				}
+			],
+			"default": "body"
+		},
+		{
+			"type": "dropdown",
+			"text": "Starting body distance",
+			"name": "vantage:default_distance",
+			"options": [
+				{
+					"name": "close",
+					"text": "Close"
+				},
+				{
+					"name": "normal",
+					"text": "Normal"
+				},
+				{
+					"name": "far",
+					"text": "Far"
+				}
+			],
+			"default": "normal"
+		},
+		{
+			"type": "toggle",
+			"text": "Players can turn Vantage on/off and switch views",
+			"name": "vantage:players_can_toggle",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Players can open the Vantage settings",
+			"name": "vantage:players_can_configure",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Sneak + Jump quick toggle",
+			"name": "vantage:quick_toggle",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Welcome message the first time someone joins",
+			"name": "vantage:welcome_message",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Give everyone a Vantage Lens when they first join",
+			"name": "vantage:lens_on_join",
+			"default": false
+		},
+		{
+			"type": "label",
+			"text": "§lCrosshair §r§7(starting values for new players)"
+		},
+		{
+			"type": "toggle",
+			"text": "Show a crosshair in Full Body and Epic Fight",
+			"name": "vantage:crosshair",
+			"default": true
+		},
+		{
+			"type": "dropdown",
+			"text": "Crosshair style",
+			"name": "vantage:crosshair_style",
+			"options": [
+				{
+					"name": "vanilla",
+					"text": "Vanilla"
+				},
+				{
+					"name": "dot",
+					"text": "Dot"
+				},
+				{
+					"name": "plus",
+					"text": "Small plus"
+				},
+				{
+					"name": "circle",
+					"text": "Circle"
+				}
+			],
+			"default": "vanilla"
+		},
+		{
+			"type": "toggle",
+			"text": "Show the crosshair in Third Person too",
+			"name": "vantage:crosshair_third",
+			"default": false
+		},
+		{
+			"type": "label",
+			"text": "§lVanilla view §r§7(starting values for new players)"
+		},
+		{
+			"type": "dropdown",
+			"text": "In water",
+			"name": "vantage:water_mode",
+			"options": [
+				{
+					"name": "off",
+					"text": "Keep Vantage"
+				},
+				{
+					"name": "swim",
+					"text": "Vanilla only while swimming"
+				},
+				{
+					"name": "deep",
+					"text": "Vanilla while swimming or in deep water"
+				}
+			],
+			"default": "deep"
+		},
+		{
+			"type": "slider",
+			"text": "Ticks to wait before Vantage comes back after you get out of the water",
+			"name": "vantage:water_delay",
+			"min": 0,
+			"max": 40,
+			"step": 1,
+			"default": 10
+		},
+		{
+			"type": "toggle",
+			"text": "Vanilla view while gliding",
+			"name": "vantage:vanilla_gliding",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Vanilla view while crawling",
+			"name": "vantage:vanilla_crawling",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Vanilla view with a spyglass",
+			"name": "vantage:vanilla_spyglass",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Vanilla view while riding",
+			"name": "vantage:vanilla_riding",
+			"default": false
+		},
+		{
+			"type": "toggle",
+			"text": "Touch: vanilla view while holding blocks",
+			"name": "vantage:touch_build",
+			"default": true
+		},
+		{
+			"type": "label",
+			"text": "§lCompatibility"
+		},
+		{
+			"type": "toggle",
+			"text": "Let add-on mounts and vehicles use their own camera (dragons, planes...) §7(starting value)",
+			"name": "vantage:addon_mounts",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Step aside when another add-on locks the camera, like cutscenes §7(starting value)",
+			"name": "vantage:cutscenes",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Listen to other add-ons (vantage:pause tag and /scriptevent vantage:...)",
+			"name": "vantage:handshake",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Turn off for players using another first person add-on",
+			"name": "vantage:other_fp",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Immersive Combat support",
+			"name": "vantage:ic",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Immersive Combat: switch to Epic Fight view in combat mode §7(starting value)",
+			"name": "vantage:ic_epic",
+			"default": false
+		},
+		{
+			"type": "toggle",
+			"text": "Immersive Combat: let combat mode use its own camera §7(starting value)",
+			"name": "vantage:ic_camera",
+			"default": false
 		}
 	]
 }

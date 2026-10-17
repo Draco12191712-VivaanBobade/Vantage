@@ -1,5 +1,5 @@
 {
-    "format_version": 2,
+    "format_version": 3,
     "metadata": {
         "authors": [
             "Draco12191712 (Vivaan Bobade)"
@@ -21,18 +21,10 @@
     },
     "header": {
         "name": "§9§lVantage§r Resources",
-        "description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! It's made to make first-person feel more natural without changing the way Minecraft feels. You see your own body when you look down — legs, torso, arms, armor, your skin — and everything else about the game stays exactly where you left it.§r\n\n§e§lBUILD DETAILS:§r §7v1.1.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 0928.1§r",
-        "min_engine_version": [
-            1,
-            21,
-            110
-        ],
+        "description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.1.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1018.1§r",
+        "min_engine_version": "1.26.0",
         "uuid": "32a52da7-56df-4241-b6cd-066b88d5b2aa",
-        "version": [
-            1,
-            1,
-            0
-        ]
+        "version": "2.1.0"
     },
     "modules": [
         {
@@ -40,21 +32,97 @@
             "description": "Resource module assets for Vantage",
             "type": "resources",
             "uuid": "fc8375d2-5a87-488e-ab81-2374f6cc453b",
-            "version": [
-                1,
-                1,
-                0
-            ]
+            "version": "2.1.0"
         }
     ],
     "dependencies": [
         {
             "uuid": "df9c5a01-48bd-4bf3-94e0-8e4ba56af13b",
-            "version": [
-                1,
-                1,
-                0
-            ]
+            "version": "2.1.0"
+        }
+    ],
+    "capabilities": [
+        "pbr"
+    ],
+    "settings": [
+        {
+            "type": "label",
+            "text": "§9§lVantage§r §7looks! These only change what YOU see, everyone else still sees you normally"
+        },
+        {
+            "type": "label",
+            "text": "§lEpic Fight"
+        },
+        {
+            "type": "slider",
+            "text": "Arm height",
+            "name": "vantage:arm_up",
+            "min": -6,
+            "max": 6,
+            "step": 0.5,
+            "default": 0
+        },
+        {
+            "type": "slider",
+            "text": "Arm distance (forward / back)",
+            "name": "vantage:arm_out",
+            "min": -6,
+            "max": 6,
+            "step": 0.5,
+            "default": 0
+        },
+        {
+            "type": "slider",
+            "text": "Arm angle (higher = arms lower)",
+            "name": "vantage:arm_tilt",
+            "min": -30,
+            "max": 30,
+            "step": 1,
+            "default": 0
+        },
+        {
+            "type": "toggle",
+            "text": "Arms mostly stay still when you look up and down",
+            "name": "vantage:arm_lock",
+            "default": false
+        },
+        {
+            "type": "toggle",
+            "text": "Show my legs too",
+            "name": "vantage:arm_legs",
+            "default": false
+        },
+        {
+            "type": "label",
+            "text": "§lFull Body"
+        },
+        {
+            "type": "slider",
+            "text": "Extra body distance",
+            "name": "vantage:body_back",
+            "min": -4,
+            "max": 4,
+            "step": 0.5,
+            "default": 0
+        },
+        {
+            "type": "slider",
+            "text": "Body height",
+            "name": "vantage:body_up",
+            "min": -4,
+            "max": 4,
+            "step": 0.5,
+            "default": 0
+        },
+        {
+            "type": "label",
+            "text": "§lBoth"
+        },
+        {
+            "type": "toggle",
+            "text": "Show my cape",
+            "name": "vantage:show_cape",
+            "default": false
         }
     ]
 }
