@@ -167,7 +167,7 @@ function thing() {
 var data = {};
 function st(id) {
   if (data[id] == undefined) {
-    data[id] = { m: "none", a: null, f: null, c: 0, u: false, l: -100, w: -100, x: OFF, p: 0, iw: false };
+    data[id] = { m: "none", a: null, f: null, c: 0, u: false, l: -100, w: -100, x: OFF, xb: 0, p: 0, iw: false };
   }
   return data[id];
 }
@@ -500,9 +500,14 @@ function lens(p) {
   else nxt(p);
 }
 function xh(p, t, k) {
-  if (t.x == k) return;
-  t.x = k;
-  p.onScreenDisplay.setTitle(k, { fadeInDuration: 0, stayDuration: 2, fadeOutDuration: 0 });
+  if (t.x != k) {
+    t.x = k;
+    t.xb = 4;
+  }
+  if (t.xb > 0) {
+    t.xb--;
+    p.onScreenDisplay.setTitle(t.x, { fadeInDuration: 0, stayDuration: 1, fadeOutDuration: 0 });
+  }
 }
 function nofov(p, t) {
   if (t.f != null) {
@@ -655,18 +660,18 @@ world.afterEvents.playerLeave.subscribe(function (e) {
   delete lol[e.playerId];
 });
 world.afterEvents.playerDimensionChange.subscribe(function (e) {
-  st(e.player.id).x = "?";
+  st(e.player.id).xb = 4;
 });
 world.afterEvents.playerSpawn.subscribe(function (e) {
   var p = e.player;
   if (e.initialSpawn == false) {
-    st(p.id).x = "?";
+    st(p.id).xb = 4;
     return;
   }
   delete data[p.id];
   delete data2[p.id];
   system.runTimeout(function () {
-    if (p.isValid) st(p.id).x = "?";
+    if (p.isValid) st(p.id).xb = 4;
   }, 40);
   system.runTimeout(function () {
     if (!p.isValid || p.getDynamicProperty("vantage:seen")) return;

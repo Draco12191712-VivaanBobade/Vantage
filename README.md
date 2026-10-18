@@ -17,7 +17,7 @@ Vantage is a first person addon for Minecraft Bedrock! When you look down you ca
 
 ## Other stuff
 
-- There's a crosshair now! Vantage's camera counts as third person to Minecraft so the normal crosshair goes away, so Vantage puts its own back. You can pick Vanilla, Dot, Small plus or Circle, or turn it off in the settings. The Vanilla one uses your texture pack's crosshair
+- There's a crosshair now! Vantage's camera counts as third person to Minecraft so the normal crosshair goes away, so Vantage puts its own back. You can pick Vanilla, Dot, Small plus or Circle, or turn it off in the settings. It works with Immersive Combat's HUD too
 - When you swim, the view goes back to normal Minecraft and comes back when you get out of the water. You can make it only do that while swimming, or turn it off
 - Works on touch, controller and keyboard. On mobile, if you're holding a block it switches to the normal camera so you can tap where you want to place it
 - Goes back to the normal view for maps, spyglasses, gliding, crawling, swimming and sleeping

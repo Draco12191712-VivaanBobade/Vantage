@@ -7,9 +7,6 @@
 			0
 		],
 		"$vantage_xh_key": "§v§u§t",
-		"property_bag": {
-			"#vantage_xh_text": ""
-		},
 		"bindings": [
 			{
 				"binding_name": "#hud_title_text_string"
@@ -28,32 +25,22 @@
 	},
 	"vantage_xh_vanilla": {
 		"type": "image",
-		"texture": "textures/gui/icons",
+		"texture": "textures/ui/vantage/crosshair_vanilla",
 		"anchor_from": "center",
 		"anchor_to": "center",
 		"size": [
 			15,
 			15
 		],
-		"layer": 3,
 		"visible": false,
 		"bindings": [
 			{
 				"binding_type": "view",
 				"source_control_name": "vantage_xh_data",
-				"source_property_name": "(#vantage_xh_text = '§v§u§t§1')",
+				"source_property_name": "((#vantage_xh_text - '§v§u§t') = '§1')",
 				"target_property_name": "#visible"
 			}
-		],
-		"uv": [
-			0,
-			0
-		],
-		"uv_size": [
-			15,
-			15
-		],
-		"alpha": 0.9
+		]
 	},
 	"vantage_xh_dot": {
 		"type": "image",
@@ -64,13 +51,12 @@
 			15,
 			15
 		],
-		"layer": 3,
 		"visible": false,
 		"bindings": [
 			{
 				"binding_type": "view",
 				"source_control_name": "vantage_xh_data",
-				"source_property_name": "(#vantage_xh_text = '§v§u§t§2')",
+				"source_property_name": "((#vantage_xh_text - '§v§u§t') = '§2')",
 				"target_property_name": "#visible"
 			}
 		]
@@ -84,13 +70,12 @@
 			15,
 			15
 		],
-		"layer": 3,
 		"visible": false,
 		"bindings": [
 			{
 				"binding_type": "view",
 				"source_control_name": "vantage_xh_data",
-				"source_property_name": "(#vantage_xh_text = '§v§u§t§3')",
+				"source_property_name": "((#vantage_xh_text - '§v§u§t') = '§3')",
 				"target_property_name": "#visible"
 			}
 		]
@@ -104,13 +89,12 @@
 			15,
 			15
 		],
-		"layer": 3,
 		"visible": false,
 		"bindings": [
 			{
 				"binding_type": "view",
 				"source_control_name": "vantage_xh_data",
-				"source_property_name": "(#vantage_xh_text = '§v§u§t§4')",
+				"source_property_name": "((#vantage_xh_text - '§v§u§t') = '§4')",
 				"target_property_name": "#visible"
 			}
 		]
