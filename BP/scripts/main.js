@@ -13,7 +13,7 @@ import {
   InputPermissionCategory,
 } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
-var v = "2.1.0",
+var v = "2.2.0",
   lol = {};
 var OFF = "§v§u§t§0"
 function go(p) {
@@ -64,6 +64,7 @@ function go(p) {
     return;
   }
   if (fight == true && s.icEpic == true && vw == "body") vw = "epic"
+  if (air(p, s) == 2) vw = "third";
   if (vw == "third") {
     stop(p, t);
     p.camera.setCamera("minecraft:third_person");
@@ -115,7 +116,8 @@ var wd = {
   crosshair_third: false,
   water_mode: "deep",
   water_delay: 10,
-  vanilla_gliding: true,
+  glide_mode: "third",
+  fly_mode: "third",
   vanilla_crawling: true,
   vanilla_spyglass: true,
   vanilla_riding: false,
@@ -127,6 +129,10 @@ var wd = {
   ic: true,
   ic_epic: false,
   ic_camera: false,
+  lens_body: true,
+  lens_epic: true,
+  lens_third: true,
+  lens_vanilla: true,
 };
 world.afterEvents.itemStopUse.subscribe(function (e) {
   st(e.source.id).u = false;
@@ -135,7 +141,11 @@ function thing() {
   var w = ww(),
     d = dd.indexOf(w.default_distance),
     x = xs.indexOf(w.crosshair_style),
-    y = wm.indexOf(w.water_mode);
+    y = wm.indexOf(w.water_mode),
+    g = fm.indexOf(w.glide_mode),
+    fl = fm.indexOf(w.fly_mode);
+  if (g == -1) g = 2;
+  if (fl == -1) fl = 2;
   if (d == -1) d = 1;
   if (x == -1) x = 0;
   if (y == -1) y = 2;
@@ -153,7 +163,8 @@ function thing() {
     crosshairStyle: x,
     crosshairThird: w.crosshair_third,
     water: y,
-    vanillaGliding: w.vanilla_gliding,
+    glide: g,
+    fly: fl,
     vanillaCrawling: w.vanilla_crawling,
     vanillaSpyglass: w.vanilla_spyglass,
     vanillaRiding: w.vanilla_riding,
@@ -162,6 +173,10 @@ function thing() {
     touchBuild: w.touch_build,
     icEpic: w.ic_epic,
     icCamera: w.ic_camera,
+    lensBody: w.lens_body,
+    lensEpic: w.lens_epic,
+    lensThird: w.lens_third,
+    lensVanilla: w.lens_vanilla,
   };
 }
 var data = {};
@@ -248,6 +263,7 @@ function get(p) {
       for (var k in s) {
         if (y[k] != undefined) s[k] = y[k];
       }
+      if (y.glide == undefined && y.vanillaGliding == false) s.glide = 0;
     } catch (e) {
       s = thing();
     }
@@ -259,6 +275,8 @@ function get(p) {
   s.fov = num(s.fov, 30, 110, 70);
   s.crosshairStyle = num(s.crosshairStyle, 0, 3, 0) | 0;
   s.water = num(s.water, 0, 2, 2) | 0;
+  s.glide = num(s.glide, 0, 2, 2) | 0;
+  s.fly = num(s.fly, 0, 2, 2) | 0;
   if (vs.indexOf(s.view) == -1) s.view = "body";
   data2[p.id] = s;
   return s;
@@ -355,7 +373,7 @@ function check(p, s, o, t, w) {
     if (mm == "minecraft:happy_ghast") return true;
     if (s.vanillaRiding == true) return true;
   }
-  if (s.vanillaGliding && p.isGliding) return true;
+  if (air(p, s) == 1) return true;
   if (
     s.vanillaCrawling &&
     p.isSwimming == false &&
@@ -390,18 +408,58 @@ function nxt(p) {
     p.onScreenDisplay.setActionBar("§cThe world owner locked Vantage");
     return;
   }
-  var s = get(p);
-  if (s.enabled == false) {
+  var s = get(p),
+    lz = lzz(s),
+    cur = "off",
+    nx = "off";
+  if (s.enabled == true) cur = s.view;
+  nx = cur;
+  for (var j = 1; j <= 4; j++) {
+    var c = cy[(cy.indexOf(cur) + j) % 4];
+    if (lz.indexOf(c) != -1) {
+      nx = c;
+      break;
+    }
+  }
+  if (nx == cur) {
+    p.onScreenDisplay.setActionBar("§7Pick more views for the Lens in §f/vantage§7 settings");
+    return;
+  }
+  if (nx == "off") s.enabled = false;
+  else {
     s.enabled = true;
-    s.view = "body";
-  } else if (s.view == "body") s.view = "epic";
-  else if (s.view == "epic") s.view = "third";
-  else s.enabled = false;
+    s.view = nx;
+  }
   save(p, s);
   go(p);
   if (s.enabled == true)
     p.onScreenDisplay.setActionBar("§9Vantage: §f" + nm(s));
   else p.onScreenDisplay.setActionBar("§9Vantage: §fVanilla view");
+}
+var cy = ["body", "epic", "third", "off"];
+function lzz(s) {
+  var a = [];
+  if (s.lensBody == true) a.push("body");
+  if (s.lensEpic == true) a.push("epic");
+  if (s.lensThird == true) a.push("third");
+  if (s.lensVanilla == true) a.push("off");
+  if (a.length == 0) a = cy.slice();
+  return a;
+}
+function lzn(s) {
+  var a = lzz(s),
+    b = "";
+  for (var i = 0; i < a.length; i++) {
+    if (i > 0) b = b + ", ";
+    if (a[i] == "off") b = b + "Vanilla";
+    else b = b + names[vs.indexOf(a[i])];
+  }
+  return b;
+}
+function air(p, s) {
+  if (p.isGliding == true) return s.glide;
+  if (p.isFlying == true) return s.fly;
+  return 0;
 }
 function wet(p, md) {
   if (p.isSwimming == true) return true;
@@ -458,6 +516,8 @@ function menu(p) {
     dn[s.distance] +
     "§r\nCrosshair: §f" +
     (s.crosshair ? xn[s.crosshairStyle] : "Off") +
+    "§r\nLens switches to: §f" +
+    lzn(s) +
     "§r\n§7Quick toggle: Sneak + Jump\nVantage Lens: use it to switch views§r\n§8v" +
     v +
     "§r",
@@ -529,6 +589,8 @@ var xn = ["Vanilla", "Dot", "Small plus", "Circle"],
   xs = ["vanilla", "dot", "plus", "circle"];
 var wn = ["Keep Vantage", "Vanilla only while swimming", "Vanilla while swimming or in deep water"],
   wm = ["off", "swim", "deep"];
+var fn = ["Keep Vantage", "Vanilla first person", "Vanilla third person"],
+  fm = ["off", "first", "third"];
 function menu2(p) {
   if (ww().players_can_configure == false) {
     p.sendMessage("§c[Vantage] The world owner turned off the settings menu.");
@@ -559,7 +621,8 @@ function menu2(p) {
   f.dropdown("Crosshair style", xn, { defaultValueIndex: s.crosshairStyle });
   f.toggle("Crosshair in Third Person too", { defaultValue: s.crosshairThird });
   f.dropdown("In water", wn, { defaultValueIndex: s.water });
-  f.toggle("Vanilla view while gliding", { defaultValue: s.vanillaGliding });
+  f.dropdown("While gliding (elytra)", fn, { defaultValueIndex: s.glide });
+  f.dropdown("While flying (creative)", fn, { defaultValueIndex: s.fly });
   f.toggle("Vanilla view while crawling", { defaultValue: s.vanillaCrawling });
   f.toggle("Vanilla view with spyglass", { defaultValue: s.vanillaSpyglass });
   f.toggle("Vanilla view while riding", { defaultValue: s.vanillaRiding });
@@ -574,6 +637,10 @@ function menu2(p) {
   });
   f.toggle("Immersive Combat: Epic Fight view in combat mode", { defaultValue: s.icEpic });
   f.toggle("Immersive Combat: let combat mode use its own camera", { defaultValue: s.icCamera });
+  f.toggle("Lens / Switch View goes to Full Body", { defaultValue: s.lensBody });
+  f.toggle("Lens / Switch View goes to Epic Fight", { defaultValue: s.lensEpic });
+  f.toggle("Lens / Switch View goes to Third Person", { defaultValue: s.lensThird });
+  f.toggle("Lens / Switch View goes to Vanilla", { defaultValue: s.lensVanilla });
   show(p, f, 0, function (r) {
     if (r.canceled || r.formValues == undefined) return;
     var q = r.formValues,
@@ -591,15 +658,20 @@ function menu2(p) {
     n.crosshairStyle = num(q[10], 0, 3, 0) | 0;
     n.crosshairThird = q[11] == true;
     n.water = num(q[12], 0, 2, 2) | 0;
-    n.vanillaGliding = q[13] == true;
-    n.vanillaCrawling = q[14] == true;
-    n.vanillaSpyglass = q[15] == true;
-    n.vanillaRiding = q[16] == true;
-    n.addonMounts = q[17] == true;
-    n.cutscenes = q[18] == true;
-    n.touchBuild = q[19] == true;
-    n.icEpic = q[20] == true;
-    n.icCamera = q[21] == true;
+    n.glide = num(q[13], 0, 2, 2) | 0;
+    n.fly = num(q[14], 0, 2, 2) | 0;
+    n.vanillaCrawling = q[15] == true;
+    n.vanillaSpyglass = q[16] == true;
+    n.vanillaRiding = q[17] == true;
+    n.addonMounts = q[18] == true;
+    n.cutscenes = q[19] == true;
+    n.touchBuild = q[20] == true;
+    n.icEpic = q[21] == true;
+    n.icCamera = q[22] == true;
+    n.lensBody = q[23] == true;
+    n.lensEpic = q[24] == true;
+    n.lensThird = q[25] == true;
+    n.lensVanilla = q[26] == true;
     if (n.view == undefined) n.view = "body";
     save(p, n);
     p.sendMessage("§7[Vantage] Settings saved.");

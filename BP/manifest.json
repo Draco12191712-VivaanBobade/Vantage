@@ -21,10 +21,10 @@
 	},
 	"header": {
 		"name": "§9§lVantage§r Behaviors",
-		"description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.1.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1018.1§r",
+		"description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.2.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1024.1§r",
 		"min_engine_version": "1.26.0",
 		"uuid": "df9c5a01-48bd-4bf3-94e0-8e4ba56af13b",
-		"version": "2.1.0"
+		"version": "2.2.0"
 	},
 	"modules": [
 		{
@@ -32,14 +32,14 @@
 			"description": "Behavior module assets for Vantage",
 			"type": "data",
 			"uuid": "9bbf8315-5afb-4398-a303-db404c9cb039",
-			"version": "2.1.0"
+			"version": "2.2.0"
 		},
 		{
 			"type": "script",
 			"language": "javascript",
 			"uuid": "b3c48929-c09a-4fe7-a57b-3f9e93672673",
 			"entry": "scripts/main.js",
-			"version": "2.1.0"
+			"version": "2.2.0"
 		}
 	],
 	"dependencies": [
@@ -53,7 +53,7 @@
 		},
 		{
 			"uuid": "32a52da7-56df-4241-b6cd-066b88d5b2aa",
-			"version": "2.1.0"
+			"version": "2.2.0"
 		}
 	],
 	"settings": [
@@ -179,6 +179,34 @@
 		},
 		{
 			"type": "label",
+			"text": "§lVantage Lens §r§7(which views the Lens switches between, starting values for new players)"
+		},
+		{
+			"type": "toggle",
+			"text": "Lens goes to Full Body",
+			"name": "vantage:lens_body",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Lens goes to Epic Fight",
+			"name": "vantage:lens_epic",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Lens goes to Third Person",
+			"name": "vantage:lens_third",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Lens goes to Vanilla",
+			"name": "vantage:lens_vanilla",
+			"default": true
+		},
+		{
+			"type": "label",
 			"text": "§lVanilla view §r§7(starting values for new players)"
 		},
 		{
@@ -211,10 +239,44 @@
 			"default": 10
 		},
 		{
-			"type": "toggle",
-			"text": "Vanilla view while gliding",
-			"name": "vantage:vanilla_gliding",
-			"default": true
+			"type": "dropdown",
+			"text": "While gliding with an elytra",
+			"name": "vantage:glide_mode",
+			"options": [
+				{
+					"name": "off",
+					"text": "Keep Vantage"
+				},
+				{
+					"name": "first",
+					"text": "Vanilla first person"
+				},
+				{
+					"name": "third",
+					"text": "Vanilla third person"
+				}
+			],
+			"default": "third"
+		},
+		{
+			"type": "dropdown",
+			"text": "While flying in creative",
+			"name": "vantage:fly_mode",
+			"options": [
+				{
+					"name": "off",
+					"text": "Keep Vantage"
+				},
+				{
+					"name": "first",
+					"text": "Vanilla first person"
+				},
+				{
+					"name": "third",
+					"text": "Vanilla third person"
+				}
+			],
+			"default": "third"
 		},
 		{
 			"type": "toggle",
