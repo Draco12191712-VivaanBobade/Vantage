@@ -13,14 +13,15 @@ Vantage is a first person addon for Minecraft Bedrock! When you look down you ca
 
 - **Full Body**: your whole body in first person, and you only ever see the front of it
 - **Epic Fight**: just like the Epic Fight mod, you only see your two arms and whatever you're holding, no body or legs in the way. Works with any item, even ones from other add-ons
-- **Third Person**: normal third person
+- **Third Person**: a dynamic third person! The camera sits over your shoulder and the FOV gets wider when you go fast. You can pick the shoulder and the distance, or switch it back to normal vanilla third person in the settings
 - **Vanilla**: just regular Minecraft
 
 ## Other stuff
 
 - There's a crosshair now! Vantage's camera counts as third person to Minecraft so the normal crosshair goes away, so Vantage puts its own back. You can pick Vanilla, Dot, Small plus or Circle, or turn it off in the settings. It works with Immersive Combat's HUD too
 - When you swim, the view goes back to normal Minecraft and comes back when you get out of the water. You can make it only do that while swimming, or turn it off
-- When you fly in creative or glide with an elytra, it switches to normal third person so you can actually see where you're going, and comes back when you land. You can change it to vanilla first person or just keep Vantage in the settings
+- When you fly in creative or glide with an elytra, it switches to third person so you can actually see where you're going, and comes back when you land. You can change it to vanilla first person or just keep Vantage in the settings
+- Going between first person and third person doesn't just snap anymore, the camera smoothly glides out of your head and back in :D You can turn that off or make it faster/slower in the settings
 - Works on touch, controller and keyboard. On mobile, if you're holding a block it switches to the normal camera so you can tap where you want to place it
 - Goes back to the normal view for maps, spyglasses, crawling, swimming and sleeping
 - You can change the body distance, camera position and FOV in the settings
