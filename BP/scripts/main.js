@@ -11,9 +11,10 @@ import {
   BlockTypes,
   ItemTypes,
   InputPermissionCategory,
+  EasingType,
 } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
-var v = "2.2.0",
+var v = "2.3.0",
   lol = {};
 var OFF = "§v§u§t§0"
 function go(p) {
@@ -65,9 +66,39 @@ function go(p) {
   }
   if (fight == true && s.icEpic == true && vw == "body") vw = "epic"
   if (air(p, s) == 2) vw = "third";
+  var wn2 = "pov";
+  if (vw == "third") wn2 = "third";
+  if (s.smooth == true && t.k != null) {
+    if (t.g > now) {
+      if (t.gk != wn2) {
+        t.gk = wn2;
+        t.k = wn2;
+        t.g = now + w.smooth_ticks;
+      }
+    } else if (t.k != wn2) {
+      t.gk = wn2;
+      t.k = wn2;
+      t.g = now + w.smooth_ticks;
+    }
+  }
+  if (t.g > now) {
+    stop(p, t);
+    var rr = p.getRotation();
+    p.camera.setCamera("minecraft:free", {
+      location: spot(p, s, t.gk, t.g - now),
+      rotation: { x: rr.x, y: rr.y },
+      easeOptions: { easeTime: (t.g - now) / 20, easeType: EasingType.Linear },
+    });
+    t.m = vw;
+    t.c = 0;
+    xh(p, t, OFF);
+    return;
+  }
+  t.k = wn2;
   if (vw == "third") {
     stop(p, t);
-    p.camera.setCamera("minecraft:third_person");
+    if (s.thirdStyle == 1) p.camera.setCamera("minecraft:third_person");
+    else p.camera.setCamera(tp[s.thirdDist], { entityOffset: { x: [-0.6, 0, 0.6][s.shoulder], y: 0, z: 0 } });
   } else {
     var an = a1[s.distance],
       bk = [0.04, 0.13, 0.25][s.distance];
@@ -94,7 +125,8 @@ function go(p) {
   }
   t.m = vw;
   t.c = 0;
-  fov(p, t, s);
+  if (vw == "third" && s.thirdStyle == 0 && s.speedFov == true) zoom(p, t, s, now);
+  else fov(p, t, s);
   var k = OFF;
   if (s.crosshair == true && (vw != "third" || s.crosshairThird == true)) k = "§v§u§t§" + (s.crosshairStyle + 1)
   xh(p, t, k);
@@ -129,6 +161,12 @@ var wd = {
   ic: true,
   ic_epic: false,
   ic_camera: false,
+  third_style: "dynamic",
+  shoulder: "right",
+  third_distance: "normal",
+  speed_fov: true,
+  smooth_camera: true,
+  smooth_ticks: 8,
   lens_body: true,
   lens_epic: true,
   lens_third: true,
@@ -143,7 +181,13 @@ function thing() {
     x = xs.indexOf(w.crosshair_style),
     y = wm.indexOf(w.water_mode),
     g = fm.indexOf(w.glide_mode),
-    fl = fm.indexOf(w.fly_mode);
+    fl = fm.indexOf(w.fly_mode),
+    a = ts.indexOf(w.third_style),
+    b = sh.indexOf(w.shoulder),
+    c = dd.indexOf(w.third_distance);
+  if (a == -1) a = 0;
+  if (b == -1) b = 0;
+  if (c == -1) c = 1;
   if (g == -1) g = 2;
   if (fl == -1) fl = 2;
   if (d == -1) d = 1;
@@ -173,6 +217,11 @@ function thing() {
     touchBuild: w.touch_build,
     icEpic: w.ic_epic,
     icCamera: w.ic_camera,
+    thirdStyle: a,
+    shoulder: b,
+    thirdDist: c,
+    speedFov: w.speed_fov,
+    smooth: w.smooth_camera,
     lensBody: w.lens_body,
     lensEpic: w.lens_epic,
     lensThird: w.lens_third,
@@ -182,7 +231,7 @@ function thing() {
 var data = {};
 function st(id) {
   if (data[id] == undefined) {
-    data[id] = { m: "none", a: null, f: null, c: 0, u: false, l: -100, w: -100, x: OFF, xb: 0, p: 0, iw: false };
+    data[id] = { m: "none", a: null, f: null, c: 0, u: false, l: -100, w: -100, x: OFF, xb: 0, p: 0, iw: false, k: null, g: 0, gk: "pov" };
   }
   return data[id];
 }
@@ -277,6 +326,9 @@ function get(p) {
   s.water = num(s.water, 0, 2, 2) | 0;
   s.glide = num(s.glide, 0, 2, 2) | 0;
   s.fly = num(s.fly, 0, 2, 2) | 0;
+  s.thirdStyle = num(s.thirdStyle, 0, 1, 0) | 0;
+  s.shoulder = num(s.shoulder, 0, 2, 0) | 0;
+  s.thirdDist = num(s.thirdDist, 0, 2, 1) | 0;
   if (vs.indexOf(s.view) == -1) s.view = "body";
   data2[p.id] = s;
   return s;
@@ -319,6 +371,8 @@ function van(p, t, w) {
   if (t.m != w) {
     stop(p, t);
     nofov(p, t);
+    t.k = null;
+    t.g = 0;
     if (ours(t.m) || t.m == "none") t.c = 0;
     else t.c = 6;
     t.m = w;
@@ -334,6 +388,8 @@ function back(p, t, w, cl) {
   if (t.m == w) return;
   stop(p, t);
   nofov(p, t);
+  t.k = null;
+  t.g = 0;
   if (cl == "third") p.camera.setCamera("minecraft:third_person");
   else if (cl == true && ours(t.m)) p.camera.clear();
   t.m = w;
@@ -455,6 +511,43 @@ function lzn(s) {
     else b = b + names[vs.indexOf(a[i])];
   }
   return b;
+}
+var tp = ["vantage:third_close", "vantage:third", "vantage:third_far"];
+function spot(p, s, k, n) {
+  var hd = p.getHeadLocation(),
+    vd = p.getViewDirection(),
+    ve = p.getVelocity(),
+    r = p.getRotation(),
+    ya = (r.y * Math.PI) / 180,
+    rd = 0.4,
+    sd = 0;
+  if (k == "third") {
+    rd = 4;
+    if (s.thirdStyle == 0) {
+      rd = [2.5, 3.75, 5.5][s.thirdDist];
+      sd = [0.6, 0, -0.6][s.shoulder];
+    }
+  }
+  return {
+    x: hd.x + ve.x * n - Math.cos(ya) * sd - vd.x * rd,
+    y: hd.y + ve.y * n - vd.y * rd,
+    z: hd.z + ve.z * n - Math.sin(ya) * sd - vd.z * rd,
+  };
+}
+function zoom(p, t, s, now) {
+  if (now % 3 != 0 && t.f != null) return;
+  var ve = p.getVelocity(),
+    q = Math.sqrt(ve.x * ve.x + ve.y * ve.y + ve.z * ve.z) * 20,
+    f = (q - 4) / 20,
+    b = 70;
+  if (f < 0) f = 0;
+  if (f > 1) f = 1;
+  if (s.fovEnabled == true) b = s.fov;
+  var z = Math.round(b + 20 * f);
+  if (z > 110) z = 110;
+  if (t.f != null && Math.abs(z - t.f) < 1) return;
+  t.f = z;
+  p.camera.setFov({ fov: z, easeOptions: { easeTime: 0.4, easeType: EasingType.OutSine } });
 }
 function air(p, s) {
   if (p.isGliding == true) return s.glide;
@@ -589,8 +682,12 @@ var xn = ["Vanilla", "Dot", "Small plus", "Circle"],
   xs = ["vanilla", "dot", "plus", "circle"];
 var wn = ["Keep Vantage", "Vanilla only while swimming", "Vanilla while swimming or in deep water"],
   wm = ["off", "swim", "deep"];
-var fn = ["Keep Vantage", "Vanilla first person", "Vanilla third person"],
+var fn = ["Keep Vantage", "Vanilla first person", "Third person"],
   fm = ["off", "first", "third"];
+var tn = ["Dynamic", "Vanilla"],
+  ts = ["dynamic", "vanilla"],
+  hn = ["Right", "Center", "Left"],
+  sh = ["right", "center", "left"];
 function menu2(p) {
   if (ww().players_can_configure == false) {
     p.sendMessage("§c[Vantage] The world owner turned off the settings menu.");
@@ -641,6 +738,11 @@ function menu2(p) {
   f.toggle("Lens / Switch View goes to Epic Fight", { defaultValue: s.lensEpic });
   f.toggle("Lens / Switch View goes to Third Person", { defaultValue: s.lensThird });
   f.toggle("Lens / Switch View goes to Vanilla", { defaultValue: s.lensVanilla });
+  f.dropdown("Third Person style", tn, { defaultValueIndex: s.thirdStyle });
+  f.dropdown("Dynamic Third Person: shoulder", hn, { defaultValueIndex: s.shoulder });
+  f.dropdown("Dynamic Third Person: distance", dn, { defaultValueIndex: s.thirdDist });
+  f.toggle("Dynamic Third Person: FOV gets wider when you go fast", { defaultValue: s.speedFov });
+  f.toggle("Smooth camera when switching to and from third person", { defaultValue: s.smooth });
   show(p, f, 0, function (r) {
     if (r.canceled || r.formValues == undefined) return;
     var q = r.formValues,
@@ -672,6 +774,11 @@ function menu2(p) {
     n.lensEpic = q[24] == true;
     n.lensThird = q[25] == true;
     n.lensVanilla = q[26] == true;
+    n.thirdStyle = num(q[27], 0, 1, 0) | 0;
+    n.shoulder = num(q[28], 0, 2, 0) | 0;
+    n.thirdDist = num(q[29], 0, 2, 1) | 0;
+    n.speedFov = q[30] == true;
+    n.smooth = q[31] == true;
     if (n.view == undefined) n.view = "body";
     save(p, n);
     p.sendMessage("§7[Vantage] Settings saved.");

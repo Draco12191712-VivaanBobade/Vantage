@@ -21,10 +21,10 @@
     },
     "header": {
         "name": "§9§lVantage§r Resources",
-        "description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.2.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1024.1§r",
+        "description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.3.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1025.1§r",
         "min_engine_version": "1.26.0",
         "uuid": "32a52da7-56df-4241-b6cd-066b88d5b2aa",
-        "version": "2.2.0"
+        "version": "2.3.0"
     },
     "modules": [
         {
@@ -32,13 +32,13 @@
             "description": "Resource module assets for Vantage",
             "type": "resources",
             "uuid": "fc8375d2-5a87-488e-ab81-2374f6cc453b",
-            "version": "2.2.0"
+            "version": "2.3.0"
         }
     ],
     "dependencies": [
         {
             "uuid": "df9c5a01-48bd-4bf3-94e0-8e4ba56af13b",
-            "version": "2.2.0"
+            "version": "2.3.0"
         }
     ],
     "capabilities": [

@@ -21,10 +21,10 @@
 	},
 	"header": {
 		"name": "§9§lVantage§r Behaviors",
-		"description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.2.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1024.1§r",
+		"description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.3.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1025.1§r",
 		"min_engine_version": "1.26.0",
 		"uuid": "df9c5a01-48bd-4bf3-94e0-8e4ba56af13b",
-		"version": "2.2.0"
+		"version": "2.3.0"
 	},
 	"modules": [
 		{
@@ -32,14 +32,14 @@
 			"description": "Behavior module assets for Vantage",
 			"type": "data",
 			"uuid": "9bbf8315-5afb-4398-a303-db404c9cb039",
-			"version": "2.2.0"
+			"version": "2.3.0"
 		},
 		{
 			"type": "script",
 			"language": "javascript",
 			"uuid": "b3c48929-c09a-4fe7-a57b-3f9e93672673",
 			"entry": "scripts/main.js",
-			"version": "2.2.0"
+			"version": "2.3.0"
 		}
 	],
 	"dependencies": [
@@ -53,7 +53,7 @@
 		},
 		{
 			"uuid": "32a52da7-56df-4241-b6cd-066b88d5b2aa",
-			"version": "2.2.0"
+			"version": "2.3.0"
 		}
 	],
 	"settings": [
@@ -179,6 +179,87 @@
 		},
 		{
 			"type": "label",
+			"text": "§lThird Person §r§7(starting values for new players)"
+		},
+		{
+			"type": "dropdown",
+			"text": "Third Person style",
+			"name": "vantage:third_style",
+			"options": [
+				{
+					"name": "dynamic",
+					"text": "Dynamic (over the shoulder)"
+				},
+				{
+					"name": "vanilla",
+					"text": "Vanilla"
+				}
+			],
+			"default": "dynamic"
+		},
+		{
+			"type": "dropdown",
+			"text": "Dynamic Third Person: shoulder",
+			"name": "vantage:shoulder",
+			"options": [
+				{
+					"name": "right",
+					"text": "Right"
+				},
+				{
+					"name": "center",
+					"text": "Center"
+				},
+				{
+					"name": "left",
+					"text": "Left"
+				}
+			],
+			"default": "right"
+		},
+		{
+			"type": "dropdown",
+			"text": "Dynamic Third Person: distance",
+			"name": "vantage:third_distance",
+			"options": [
+				{
+					"name": "close",
+					"text": "Close"
+				},
+				{
+					"name": "normal",
+					"text": "Normal"
+				},
+				{
+					"name": "far",
+					"text": "Far"
+				}
+			],
+			"default": "normal"
+		},
+		{
+			"type": "toggle",
+			"text": "Dynamic Third Person: FOV gets wider when you go fast",
+			"name": "vantage:speed_fov",
+			"default": true
+		},
+		{
+			"type": "toggle",
+			"text": "Smooth camera when switching to and from third person",
+			"name": "vantage:smooth_camera",
+			"default": true
+		},
+		{
+			"type": "slider",
+			"text": "Smooth camera time (ticks, 20 = 1 second)",
+			"name": "vantage:smooth_ticks",
+			"min": 4,
+			"max": 20,
+			"step": 1,
+			"default": 8
+		},
+		{
+			"type": "label",
 			"text": "§lVantage Lens §r§7(which views the Lens switches between, starting values for new players)"
 		},
 		{
@@ -253,7 +334,7 @@
 				},
 				{
 					"name": "third",
-					"text": "Vanilla third person"
+					"text": "Third person"
 				}
 			],
 			"default": "third"
@@ -273,7 +354,7 @@
 				},
 				{
 					"name": "third",
-					"text": "Vanilla third person"
+					"text": "Third person"
 				}
 			],
 			"default": "third"
