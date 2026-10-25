@@ -76,3 +76,6 @@ cache/
 
 # git
 *.orig
+
+#testing
+TESTING.md
