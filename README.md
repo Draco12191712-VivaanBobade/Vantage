@@ -52,39 +52,6 @@ There's A LOT of settings now :p
 - Age of Dragons resets everyone's camera every single tick when they're not on a dragon. Vantage puts its camera back every tick so it should still work, but if your screen flickers with Age of Dragons on, that's why
 - Immersive Combat combat mode is detected with the weakness Immersive Combat gives you outside of combat, so if a world turns that weakness off, the Immersive Combat combat settings in Vantage won't kick in
 
-## For add-on makers
-
-If your add-on does its own camera stuff you can tell Vantage to back off for a player:
-
-- `/scriptevent vantage:suppress true` turns Vantage off for that player until you send `false`
-- `/scriptevent vantage:pause 100` pauses Vantage for 100 ticks (`/scriptevent vantage:resume` to come back early)
-- `/tag @s add vantage:pause` pauses it until you remove the tag. Add the tag first and set your camera a tick later so Vantage doesn't clear it
-- Vantage also listens to the `ae_fpm.disable_animation` and `ae_fpm.is_first_person` tags that other first person add-ons use
-
-Minecraft has A LOT of add-ons so I can't promise it'll never break with something, but it tries its best! :p If it does, open an issue or a PR and I'll get it fixed.
-
-## Changelog
-
-### v2.3.0
-- **Dynamic Third Person!** The Third Person view isn't plain vanilla anymore. The camera sits over your shoulder and the FOV gets wider when you go fast. Pick the shoulder (Right, Center or Left) and the distance (Close, Normal or Far), or switch it back to vanilla third person
-- **Smooth camera:** going between first person and third person doesn't just snap anymore, the camera glides out of your head and back in :D You can turn it off, and world owners can make it faster or slower
-- Flying and gliding use the new Dynamic Third Person too
-
-### v2.2.0
-- **Pick which views the Lens switches between.** The Switch View button and `/vantage:view` follow it too
-- **Third person when flying:** flying in creative or gliding with an elytra switches to third person, and comes back when you land. You can change it to vanilla first person or just keep Vantage
-- "Vanilla view while gliding" is now part of the new gliding setting. If you had it off, it stays on Vantage for you
-
-### v2.1.0
-- **Epic Fight is now just your two arms**, like the actual Epic Fight mod! No body or legs in the way, and the arms follow where you look. Bows, crossbows, tridents, shields, eating and all that still use the normal arm poses
-- **Crosshair!** Pick Vanilla, Dot, Small plus or Circle, or turn it off. Fixes the crosshair disappearing in Full Body and Epic Fight, and it works with Immersive Combat's HUD too
-- **Swimming goes back to vanilla view**, and comes back when you get out of the water
-- **A LOT of settings now :p** World settings (gear on the behavior pack) and look settings (gear on the resource pack)
-- **Compat** with Immersive Combat, Age of Dragons, Immersive Aircraft, cutscenes, add-on mounts and other first person add-ons
-- New `/scriptevent vantage:pause <ticks>`, `/scriptevent vantage:resume` and the `vantage:pause` tag for add-on makers
-- The welcome message tells you if Vantage is on or off
-- Now needs Minecraft Bedrock 1.26.0 or newer (it was 1.21.110)
-
 ## Credits
 
 Made by **Draco12191712**. The idea came from **sick_0_0** on Discord, you can contact him [here](https://discord.com/users/1353824744578879491).
