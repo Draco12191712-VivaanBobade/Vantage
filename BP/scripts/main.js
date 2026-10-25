@@ -16,7 +16,7 @@ import {
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
 var v = "2.3.0",
   lol = {};
-var OFF = "§v§u§t§0"
+var OFF = "§v§u§t§0";
 function go(p) {
   var t = st(p.id),
     s = get(p),
@@ -35,16 +35,21 @@ function go(p) {
     return;
   }
   if (w.handshake == true && (p.hasTag("vantage:pause") == true || t.p > now)) {
-    back(p, t, "paused", true)
-    return
+    back(p, t, "paused", true);
+    return;
   }
   if (w.other_fp == true && p.hasTag("ae_fpm.is_first_person") == true) {
     back(p, t, "otherfp", false);
     return;
   }
-  if (s.cutscenes == true && p.inputPermissions.isPermissionCategoryEnabled(InputPermissionCategory.Camera) == false) {
-    back(p, t, "cutscene", false)
-    return
+  if (
+    s.cutscenes == true &&
+    p.inputPermissions.isPermissionCategoryEnabled(
+      InputPermissionCategory.Camera,
+    ) == false
+  ) {
+    back(p, t, "cutscene", false);
+    return;
   }
   var mm = m(p);
   if (s.addonMounts && mm != undefined && mm.indexOf("minecraft:") != 0) {
@@ -52,7 +57,12 @@ function go(p) {
     return;
   }
   var fight = icc(p, t, w);
-  if (fight == true && s.icCamera == true && en == true && p.hasTag("ae_fpm.disable_animation") == false) {
+  if (
+    fight == true &&
+    s.icCamera == true &&
+    en == true &&
+    p.hasTag("ae_fpm.disable_animation") == false
+  ) {
     back(p, t, "ic", "third");
     return;
   }
@@ -64,7 +74,7 @@ function go(p) {
     van(p, t, "vanilla");
     return;
   }
-  if (fight == true && s.icEpic == true && vw == "body") vw = "epic"
+  if (fight == true && s.icEpic == true && vw == "body") vw = "epic";
   if (air(p, s) == 2) vw = "third";
   var wn2 = "pov";
   if (vw == "third") wn2 = "third";
@@ -98,18 +108,23 @@ function go(p) {
   if (vw == "third") {
     stop(p, t);
     if (s.thirdStyle == 1) p.camera.setCamera("minecraft:third_person");
-    else p.camera.setCamera(tp[s.thirdDist], { entityOffset: { x: [-0.6, 0, 0.6][s.shoulder], y: 0, z: 0 } });
+    else
+      p.camera.setCamera(tp[s.thirdDist], {
+        entityOffset: { x: [-0.6, 0, 0.6][s.shoulder], y: 0, z: 0 },
+      });
   } else {
     var an = a1[s.distance],
       bk = [0.04, 0.13, 0.25][s.distance];
     if (vw == "epic") {
       bk = 0.13;
-      if (w.ic == true && p.hasTag("ae_fpm.disable_animation")) an = "animation.vantage.epic.free"
-      else if (fight == true) an = "animation.vantage.epic.free"
+      if (w.ic == true && p.hasTag("ae_fpm.disable_animation"))
+        an = "animation.vantage.epic.free";
+      else if (fight == true) an = "animation.vantage.epic.free";
       else if (check2(o, t)) an = "animation.vantage.epic.free";
       else an = "animation.vantage.epic.arms";
     } else {
-      if (w.ic == true && p.hasTag("ae_fpm.disable_animation") == true) an = "animation.vantage.head"
+      if (w.ic == true && p.hasTag("ae_fpm.disable_animation") == true)
+        an = "animation.vantage.head";
     }
     if (t.a != null && t.a != an) {
       p.playAnimation(t.a, { players: [p], blendOutTime: 0 });
@@ -125,10 +140,12 @@ function go(p) {
   }
   t.m = vw;
   t.c = 0;
-  if (vw == "third" && s.thirdStyle == 0 && s.speedFov == true) zoom(p, t, s, now);
+  if (vw == "third" && s.thirdStyle == 0 && s.speedFov == true)
+    zoom(p, t, s, now);
   else fov(p, t, s);
   var k = OFF;
-  if (s.crosshair == true && (vw != "third" || s.crosshairThird == true)) k = "§v§u§t§" + (s.crosshairStyle + 1)
+  if (s.crosshair == true && (vw != "third" || s.crosshairThird == true))
+    k = "§v§u§t§" + (s.crosshairStyle + 1);
   xh(p, t, k);
 }
 world.afterEvents.itemStartUse.subscribe(function (e) {
@@ -231,7 +248,22 @@ function thing() {
 var data = {};
 function st(id) {
   if (data[id] == undefined) {
-    data[id] = { m: "none", a: null, f: null, c: 0, u: false, l: -100, w: -100, x: OFF, xb: 0, p: 0, iw: false, k: null, g: 0, gk: "pov" };
+    data[id] = {
+      m: "none",
+      a: null,
+      f: null,
+      c: 0,
+      u: false,
+      l: -100,
+      w: -100,
+      x: OFF,
+      xb: 0,
+      p: 0,
+      iw: false,
+      k: null,
+      g: 0,
+      gk: "pov",
+    };
   }
   return data[id];
 }
@@ -250,7 +282,8 @@ function ww() {
     n = {};
   for (var k in wd) {
     n[k] = wd[k];
-    if (x != undefined && typeof x["vantage:" + k] == typeof wd[k]) n[k] = x["vantage:" + k];
+    if (x != undefined && typeof x["vantage:" + k] == typeof wd[k])
+      n[k] = x["vantage:" + k];
   }
   ws = n;
   wt = system.currentTick;
@@ -478,7 +511,9 @@ function nxt(p) {
     }
   }
   if (nx == cur) {
-    p.onScreenDisplay.setActionBar("§7Pick more views for the Lens in §f/vantage§7 settings");
+    p.onScreenDisplay.setActionBar(
+      "§7Pick more views for the Lens in §f/vantage§7 settings",
+    );
     return;
   }
   if (nx == "off") s.enabled = false;
@@ -547,7 +582,10 @@ function zoom(p, t, s, now) {
   if (z > 110) z = 110;
   if (t.f != null && Math.abs(z - t.f) < 1) return;
   t.f = z;
-  p.camera.setFov({ fov: z, easeOptions: { easeTime: 0.4, easeType: EasingType.OutSine } });
+  p.camera.setFov({
+    fov: z,
+    easeOptions: { easeTime: 0.4, easeType: EasingType.OutSine },
+  });
 }
 function air(p, s) {
   if (p.isGliding == true) return s.glide;
@@ -602,18 +640,18 @@ function menu(p) {
   f.title("Vantage");
   f.body(
     "Vantage is " +
-    (s.enabled ? "§aON§r" : "§cOFF§r") +
-    "\nView: §f" +
-    nm(s) +
-    "§r\nBody distance: §f" +
-    dn[s.distance] +
-    "§r\nCrosshair: §f" +
-    (s.crosshair ? xn[s.crosshairStyle] : "Off") +
-    "§r\nLens switches to: §f" +
-    lzn(s) +
-    "§r\n§7Quick toggle: Sneak + Jump\nVantage Lens: use it to switch views§r\n§8v" +
-    v +
-    "§r",
+      (s.enabled ? "§aON§r" : "§cOFF§r") +
+      "\nView: §f" +
+      nm(s) +
+      "§r\nBody distance: §f" +
+      dn[s.distance] +
+      "§r\nCrosshair: §f" +
+      (s.crosshair ? xn[s.crosshairStyle] : "Off") +
+      "§r\nLens switches to: §f" +
+      lzn(s) +
+      "§r\n§7Quick toggle: Sneak + Jump\nVantage Lens: use it to switch views§r\n§8v" +
+      v +
+      "§r",
   );
   f.button(s.enabled ? "Turn Off" : "Turn On");
   f.button("Switch View");
@@ -628,7 +666,7 @@ function menu(p) {
     if (r.selection == 3) give(p);
     if (r.selection == 4) {
       save(p, thing());
-      p.sendMessage("§7[Vantage] Settings reset.");
+      p.sendMessage("§7[Vantage] Settings reset");
     }
   });
 }
@@ -659,7 +697,11 @@ function xh(p, t, k) {
   }
   if (t.xb > 0) {
     t.xb--;
-    p.onScreenDisplay.setTitle(t.x, { fadeInDuration: 0, stayDuration: 1, fadeOutDuration: 0 });
+    p.onScreenDisplay.setTitle(t.x, {
+      fadeInDuration: 0,
+      stayDuration: 1,
+      fadeOutDuration: 0,
+    });
   }
 }
 function nofov(p, t) {
@@ -680,7 +722,11 @@ var dn = ["Close", "Normal", "Far"],
   dd = ["close", "normal", "far"];
 var xn = ["Vanilla", "Dot", "Small plus", "Circle"],
   xs = ["vanilla", "dot", "plus", "circle"];
-var wn = ["Keep Vantage", "Vanilla only while swimming", "Vanilla while swimming or in deep water"],
+var wn = [
+    "Keep Vantage",
+    "Vanilla only while swimming",
+    "Vanilla while swimming or in deep water",
+  ],
   wm = ["off", "swim", "deep"];
 var fn = ["Keep Vantage", "Vanilla first person", "Third person"],
   fm = ["off", "first", "third"];
@@ -732,17 +778,37 @@ function menu2(p) {
   f.toggle("Touch: vanilla view while holding blocks (tap to place)", {
     defaultValue: s.touchBuild,
   });
-  f.toggle("Immersive Combat: Epic Fight view in combat mode", { defaultValue: s.icEpic });
-  f.toggle("Immersive Combat: let combat mode use its own camera", { defaultValue: s.icCamera });
-  f.toggle("Lens / Switch View goes to Full Body", { defaultValue: s.lensBody });
-  f.toggle("Lens / Switch View goes to Epic Fight", { defaultValue: s.lensEpic });
-  f.toggle("Lens / Switch View goes to Third Person", { defaultValue: s.lensThird });
-  f.toggle("Lens / Switch View goes to Vanilla", { defaultValue: s.lensVanilla });
+  f.toggle("Immersive Combat: Epic Fight view in combat mode", {
+    defaultValue: s.icEpic,
+  });
+  f.toggle("Immersive Combat: let combat mode use its own camera", {
+    defaultValue: s.icCamera,
+  });
+  f.toggle("Lens / Switch View goes to Full Body", {
+    defaultValue: s.lensBody,
+  });
+  f.toggle("Lens / Switch View goes to Epic Fight", {
+    defaultValue: s.lensEpic,
+  });
+  f.toggle("Lens / Switch View goes to Third Person", {
+    defaultValue: s.lensThird,
+  });
+  f.toggle("Lens / Switch View goes to Vanilla", {
+    defaultValue: s.lensVanilla,
+  });
   f.dropdown("Third Person style", tn, { defaultValueIndex: s.thirdStyle });
-  f.dropdown("Dynamic Third Person: shoulder", hn, { defaultValueIndex: s.shoulder });
-  f.dropdown("Dynamic Third Person: distance", dn, { defaultValueIndex: s.thirdDist });
-  f.toggle("Dynamic Third Person: FOV gets wider when you go fast", { defaultValue: s.speedFov });
-  f.toggle("Smooth camera when switching to and from third person", { defaultValue: s.smooth });
+  f.dropdown("Dynamic Third Person: shoulder", hn, {
+    defaultValueIndex: s.shoulder,
+  });
+  f.dropdown("Dynamic Third Person: distance", dn, {
+    defaultValueIndex: s.thirdDist,
+  });
+  f.toggle("Dynamic Third Person: FOV gets wider when you go fast", {
+    defaultValue: s.speedFov,
+  });
+  f.toggle("Smooth camera when switching to and from third person", {
+    defaultValue: s.smooth,
+  });
   show(p, f, 0, function (r) {
     if (r.canceled || r.formValues == undefined) return;
     var q = r.formValues,
@@ -860,10 +926,10 @@ world.afterEvents.playerSpawn.subscribe(function (e) {
     if (w.welcome_message == false) return;
     p.sendMessage(
       "§7[§9§lVantage§r§7 v" +
-      v +
-      "]§r Vantage is " +
-      (get(p).enabled ? "§aon" : "§coff") +
-      "§r.\n§7Toggle: §fSneak + Jump§7 or §f/vantage§7. Craft a §9Vantage Lens§7 (glass pane + copper ingot) to switch views. Try the §fEpic Fight§7 view for just your two arms!",
+        v +
+        "]§r Vantage is " +
+        (get(p).enabled ? "§aon" : "§coff") +
+        "§r.\n§7Toggle: §fSneak + Jump§7 or §f/vantage§7. Craft a §9Vantage Lens§7 (glass pane + copper ingot) to switch views. Try the §fEpic Fight§7 view for just your two arms!",
     );
   }, 60);
 });
@@ -877,7 +943,6 @@ system.runInterval(function () {
   for (var i = 0; i < ps.length; i++) {
     try {
       if (ps[i].isValid) go(ps[i]);
-    } catch (e) { }
+    } catch (e) {}
   }
 }, 1);
-console.warn("[Vantage v" + v + "] loaded!");
