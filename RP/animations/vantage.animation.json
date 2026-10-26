@@ -37,6 +37,13 @@
 						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
 						"q.is_in_ui || q.is_swimming ? 0 : (5.5 + q.get_pack_setting('vantage:body_back'))"
 					]
+				},
+				"rightItem": {
+					"position": [
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 1 : 0",
+						0,
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 2 : 0"
+					]
 				}
 			}
 		},
@@ -76,6 +83,13 @@
 						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
 						"q.is_in_ui || q.is_swimming ? 0 : (7 + q.get_pack_setting('vantage:body_back'))"
 					]
+				},
+				"rightItem": {
+					"position": [
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 1 : 0",
+						0,
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 2 : 0"
+					]
 				}
 			}
 		},
@@ -114,6 +128,13 @@
 						0,
 						"q.is_in_ui || q.is_swimming ? 0 : (-2 + (q.target_x_rotation < 0 ? q.target_x_rotation / 15 : 0) + (q.is_sneaking ? -3 : 0) + q.get_pack_setting('vantage:body_up'))",
 						"q.is_in_ui || q.is_swimming ? 0 : (9 + q.get_pack_setting('vantage:body_back'))"
+					]
+				},
+				"rightItem": {
+					"position": [
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 1 : 0",
+						0,
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 2 : 0"
 					]
 				}
 			}
@@ -170,6 +191,13 @@
 						"q.is_in_ui || q.is_riding || q.blocking ? 0 : 6",
 						0
 					]
+				},
+				"rightItem": {
+					"position": [
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 1 : 0",
+						0,
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 2 : 0"
+					]
 				}
 			}
 		},
@@ -215,6 +243,13 @@
 						"q.is_in_ui ? 0 : (0 - math.clamp(q.target_x_rotation, 0, 90) / 9)",
 						"q.is_in_ui ? 0 : -8"
 					]
+				},
+				"rightItem": {
+					"position": [
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 1 : 0",
+						0,
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 2 : 0"
+					]
 				}
 			}
 		},
@@ -226,6 +261,13 @@
 				},
 				"cape": {
 					"scale": "q.is_in_ui || q.is_pack_setting_enabled('vantage:show_cape') ? 1.0 : 0.0"
+				},
+				"rightItem": {
+					"position": [
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 1 : 0",
+						0,
+						"!q.is_in_ui && q.is_item_name_any('slot.weapon.mainhand', 'minecraft:heavy_core') ? 2 : 0"
+					]
 				}
 			}
 		},
@@ -295,6 +337,13 @@
 						0
 					],
 					"rotation": [
+						0,
+						0,
+						0
+					]
+				},
+				"rightItem": {
+					"position": [
 						0,
 						0,
 						0
