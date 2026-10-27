@@ -2,7 +2,7 @@
 
 Vantage is a first person addon for Minecraft Bedrock! When you look down you can actually see your body (legs, arms, armor, your skin, all of it) and everything else in the game stays the same :D
 
-**Current version: v2.3.0** · works on Minecraft Bedrock 1.26.0 and up
+**Current version: v2.3.1** · works on Minecraft Bedrock 1.26.0 and up
 
 ## How to use it
 

@@ -14,7 +14,7 @@ import {
   EasingType,
 } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
-var v = "2.3.0",
+var v = "2.3.1",
   lol = {};
 var OFF = "§v§u§t§0";
 function go(p) {
