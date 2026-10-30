@@ -14,7 +14,7 @@ import {
   EasingType,
 } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
-var v = "2.3.1",
+var v = "2.4.0",
   lol = {};
 var OFF = "§v§u§t§0";
 function go(p) {
@@ -51,8 +51,10 @@ function go(p) {
     back(p, t, "cutscene", false);
     return;
   }
-  var mm = m(p);
-  if (s.addonMounts && mm != undefined && mm.indexOf("minecraft:") != 0) {
+  var mm = m(p),
+    rd = rid(p, s, mm);
+  t.rd = rd;
+  if (rd == -1) {
     back(p, t, "mount", true);
     return;
   }
@@ -76,6 +78,7 @@ function go(p) {
   }
   if (fight == true && s.icEpic == true && vw == "body") vw = "epic";
   if (air(p, s) == 2) vw = "third";
+  if (t.rd == 2) vw = "third";
   var wn2 = "pov";
   if (vw == "third") wn2 = "third";
   if (s.smooth == true && t.k != null) {
@@ -169,9 +172,9 @@ var wd = {
   fly_mode: "third",
   vanilla_crawling: true,
   vanilla_spyglass: true,
-  vanilla_riding: false,
+  ride_mode: "off",
   touch_build: true,
-  addon_mounts: true,
+  mount_mode: "own",
   cutscenes: true,
   handshake: true,
   other_fp: true,
@@ -199,6 +202,8 @@ function thing() {
     y = wm.indexOf(w.water_mode),
     g = fm.indexOf(w.glide_mode),
     fl = fm.indexOf(w.fly_mode),
+    rr = fm.indexOf(w.ride_mode),
+    mo = am.indexOf(w.mount_mode),
     a = ts.indexOf(w.third_style),
     b = sh.indexOf(w.shoulder),
     c = dd.indexOf(w.third_distance);
@@ -207,6 +212,8 @@ function thing() {
   if (c == -1) c = 1;
   if (g == -1) g = 2;
   if (fl == -1) fl = 2;
+  if (rr == -1) rr = 0;
+  if (mo == -1) mo = 0;
   if (d == -1) d = 1;
   if (x == -1) x = 0;
   if (y == -1) y = 2;
@@ -228,8 +235,8 @@ function thing() {
     fly: fl,
     vanillaCrawling: w.vanilla_crawling,
     vanillaSpyglass: w.vanilla_spyglass,
-    vanillaRiding: w.vanilla_riding,
-    addonMounts: w.addon_mounts,
+    ride: rr,
+    addonMounts: mo,
     cutscenes: w.cutscenes,
     touchBuild: w.touch_build,
     icEpic: w.ic_epic,
@@ -346,6 +353,9 @@ function get(p) {
         if (y[k] != undefined) s[k] = y[k];
       }
       if (y.glide == undefined && y.vanillaGliding == false) s.glide = 0;
+      if (y.ride == undefined && y.vanillaRiding == true) s.ride = 1;
+      if (y.addonMounts === true) s.addonMounts = 0;
+      if (y.addonMounts === false) s.addonMounts = 2;
     } catch (e) {
       s = thing();
     }
@@ -362,6 +372,8 @@ function get(p) {
   s.thirdStyle = num(s.thirdStyle, 0, 1, 0) | 0;
   s.shoulder = num(s.shoulder, 0, 2, 0) | 0;
   s.thirdDist = num(s.thirdDist, 0, 2, 1) | 0;
+  s.ride = num(s.ride, 0, 2, 0) | 0;
+  s.addonMounts = num(s.addonMounts, 0, 2, 0) | 0;
   if (vs.indexOf(s.view) == -1) s.view = "body";
   data2[p.id] = s;
   return s;
@@ -379,6 +391,23 @@ function stop(p, t) {
       blendOutTime: 0,
     });
   }
+}
+function rid(p, s, mm) {
+  if (mm == undefined) return 0;
+  if (mm.indexOf("minecraft:") != 0) {
+    if (s.addonMounts == 0) return -1;
+    if (s.addonMounts == 1 && own(p, mm) == true) return -1;
+  }
+  return s.ride;
+}
+function own(p, mm) {
+  if (mm.indexOf("ia:") == 0) return true;
+  if (mm.indexOf("aod:") == 0 && p.hasTag("aod_camera") == true) return true;
+  var e = p.getComponent("minecraft:riding").entityRidingOn;
+  if (e.hasTag("vantage:own_camera") == true) return true;
+  var f = e.getComponent("minecraft:type_family");
+  if (f != undefined && f.hasTypeFamily("vantage_own_camera") == true) return true;
+  return false;
 }
 function m(p) {
   var r = p.getComponent("minecraft:riding");
@@ -460,7 +489,7 @@ function check(p, s, o, t, w) {
   var mm = m(p);
   if (mm != undefined) {
     if (mm == "minecraft:happy_ghast") return true;
-    if (s.vanillaRiding == true) return true;
+    if (t.rd == 1) return true;
   }
   if (air(p, s) == 1) return true;
   if (
@@ -728,6 +757,8 @@ var wn = [
     "Vanilla while swimming or in deep water",
   ],
   wm = ["off", "swim", "deep"];
+var an2 = ["Let it use its own camera", "Smart: its own camera if it has one, if not use my riding setting", "Always use my riding setting"],
+  am = ["own", "smart", "rider"];
 var fn = ["Keep Vantage", "Vanilla first person", "Third person"],
   fm = ["off", "first", "third"];
 var tn = ["Dynamic", "Vanilla"],
@@ -768,9 +799,9 @@ function menu2(p) {
   f.dropdown("While flying (creative)", fn, { defaultValueIndex: s.fly });
   f.toggle("Vanilla view while crawling", { defaultValue: s.vanillaCrawling });
   f.toggle("Vanilla view with spyglass", { defaultValue: s.vanillaSpyglass });
-  f.toggle("Vanilla view while riding", { defaultValue: s.vanillaRiding });
-  f.toggle("Let add-on mounts control the camera (dragons, planes...)", {
-    defaultValue: s.addonMounts,
+  f.dropdown("While riding", fn, { defaultValueIndex: s.ride });
+  f.dropdown("Add-on mounts (dragons, planes...)", an2, {
+    defaultValueIndex: s.addonMounts,
   });
   f.toggle("Step aside when another add-on locks the camera (cutscenes)", {
     defaultValue: s.cutscenes,
@@ -830,8 +861,8 @@ function menu2(p) {
     n.fly = num(q[14], 0, 2, 2) | 0;
     n.vanillaCrawling = q[15] == true;
     n.vanillaSpyglass = q[16] == true;
-    n.vanillaRiding = q[17] == true;
-    n.addonMounts = q[18] == true;
+    n.ride = num(q[17], 0, 2, 0) | 0;
+    n.addonMounts = num(q[18], 0, 2, 0) | 0;
     n.cutscenes = q[19] == true;
     n.touchBuild = q[20] == true;
     n.icEpic = q[21] == true;

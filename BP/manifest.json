@@ -21,10 +21,10 @@
 	},
 	"header": {
 		"name": "§9§lVantage§r Behaviors",
-		"description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.3.1, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1026.1§r",
+		"description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.4.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1030.1§r",
 		"min_engine_version": "1.26.0",
 		"uuid": "df9c5a01-48bd-4bf3-94e0-8e4ba56af13b",
-		"version": "2.3.1"
+		"version": "2.4.0"
 	},
 	"modules": [
 		{
@@ -32,14 +32,14 @@
 			"description": "Behavior module assets for Vantage",
 			"type": "data",
 			"uuid": "9bbf8315-5afb-4398-a303-db404c9cb039",
-			"version": "2.3.1"
+			"version": "2.4.0"
 		},
 		{
 			"type": "script",
 			"language": "javascript",
 			"uuid": "b3c48929-c09a-4fe7-a57b-3f9e93672673",
 			"entry": "scripts/main.js",
-			"version": "2.3.1"
+			"version": "2.4.0"
 		}
 	],
 	"dependencies": [
@@ -53,7 +53,7 @@
 		},
 		{
 			"uuid": "32a52da7-56df-4241-b6cd-066b88d5b2aa",
-			"version": "2.3.1"
+			"version": "2.4.0"
 		}
 	],
 	"settings": [
@@ -372,10 +372,24 @@
 			"default": true
 		},
 		{
-			"type": "toggle",
-			"text": "Vanilla view while riding",
-			"name": "vantage:vanilla_riding",
-			"default": false
+			"type": "dropdown",
+			"text": "While riding (horses, pigs, boats...)",
+			"name": "vantage:ride_mode",
+			"options": [
+				{
+					"name": "off",
+					"text": "Keep Vantage"
+				},
+				{
+					"name": "first",
+					"text": "Vanilla first person"
+				},
+				{
+					"name": "third",
+					"text": "Third person"
+				}
+			],
+			"default": "off"
 		},
 		{
 			"type": "toggle",
@@ -388,10 +402,24 @@
 			"text": "§lCompatibility"
 		},
 		{
-			"type": "toggle",
-			"text": "Let add-on mounts and vehicles use their own camera (dragons, planes...) §7(starting value)",
-			"name": "vantage:addon_mounts",
-			"default": true
+			"type": "dropdown",
+			"text": "Add-on mounts (dragons, planes...) §7(starting value)",
+			"name": "vantage:mount_mode",
+			"options": [
+				{
+					"name": "own",
+					"text": "Let it use its own camera"
+				},
+				{
+					"name": "smart",
+					"text": "Smart: its own camera if it has one, if not use the riding setting"
+				},
+				{
+					"name": "rider",
+					"text": "Always use the riding setting"
+				}
+			],
+			"default": "own"
 		},
 		{
 			"type": "toggle",
