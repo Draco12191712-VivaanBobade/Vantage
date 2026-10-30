@@ -2,7 +2,7 @@
 
 Vantage is a first person addon for Minecraft Bedrock! When you look down you can actually see your body (legs, arms, armor, your skin, all of it) and everything else in the game stays the same :D
 
-**Current version: v2.3.1** · works on Minecraft Bedrock 1.26.0 and up
+**Current version: v2.4.0** · works on Minecraft Bedrock 1.26.0 and up
 
 ## How to use it
 
@@ -24,6 +24,7 @@ Vantage is a first person addon for Minecraft Bedrock! When you look down you ca
 - Going between first person and third person doesn't just snap anymore, the camera smoothly glides out of your head and back in :D You can turn that off or make it faster/slower in the settings
 - When you swim, the view goes back to normal Minecraft and comes back when you get out of the water. You can make it only do that while swimming, or turn it off
 - When you fly in creative or glide with an elytra, it switches to third person so you can actually see where you're going, and comes back when you land. You can change it to vanilla first person or just keep Vantage in the settings
+- When you ride something (horses, pigs, camels, boats...) you can use the dynamic third person camera too! Set "While riding" to Third person in the settings and it glides out when you get on and back in when you get off :D It's off by default so riding still looks like Vantage unless you turn it on
 - Goes back to the normal view for maps, spyglasses, crawling and sleeping too
 - Works on touch, controller and keyboard. On mobile, if you're holding a block it switches to the normal camera so you can tap where you want to place it
 - You can change the body distance, camera position and FOV in the settings
@@ -34,7 +35,7 @@ Vantage is a first person addon for Minecraft Bedrock! When you look down you ca
 
 There's A LOT of settings now :p
 
-- **/vantage** has your own settings: view, body distance, camera position, FOV, crosshair, water, flying and gliding, all the vanilla view stuff, which views the Lens goes to, and the Third Person stuff (Dynamic or Vanilla, shoulder, distance, the speed FOV and the smooth camera)
+- **/vantage** has your own settings: view, body distance, camera position, FOV, crosshair, water, flying, gliding and riding, all the vanilla view stuff, which views the Lens goes to, and the Third Person stuff (Dynamic or Vanilla, shoulder, distance, the speed FOV and the smooth camera)
 - **World settings**: go to the world's Behavior Packs, click Vantage and hit the gear. The world owner can pick the starting view, crosshair, Lens views and Third Person stuff for new players, lock Vantage so players can't turn it off, turn off the settings menu, give everyone a Lens when they join, make the smooth camera faster or slower, and turn the compatibility stuff on or off
 - **Look settings**: go to Resource Packs, click Vantage and hit the gear. These are just for you and only change what you see, like how high and how far your arms are in Epic Fight, the arm angle, showing your legs in Epic Fight, body distance and height in Full Body, and showing your cape
 
@@ -43,7 +44,9 @@ There's A LOT of settings now :p
 - **Immersive Combat**: the combat animations show up on your arms in first person. If you turn on "Epic Fight view in combat mode", Vantage switches to your two arms whenever combat mode is on. If you'd rather use Immersive Combat's own combat camera, turn on "let combat mode use its own camera". Immersive Combat's "Dynamic First Person" camera type also works with Vantage
 - **Age of Dragons**: when you ride a dragon Vantage gets out of the way so the dragon camera works, and comes back when you get off
 - **Immersive Aircraft**: same thing, Vantage steps aside while you fly so the plane camera, the scope and the flight FOV all work, and comes back when you land
-- **Other camera add-ons**: Vantage steps aside for any add-on mob or vehicle you ride, and when another add-on locks your camera (like cutscenes). If you don't want that you can turn it off in the settings
+- **Add-on mounts**: by default Vantage steps aside for any add-on mob or vehicle you ride, so its own camera works. If you set "Add-on mounts" to Smart, Vantage only steps aside if the mob actually has its own camera (like Immersive Aircraft planes, or Age of Dragons dragons with the dragon camera on), and if it doesn't, Vantage takes over with your riding setting, so you can use the dynamic camera on add-on creatures too
+- **Add-on makers**: if your rideable mob has its own camera, give it the `vantage_own_camera` family (or the `vantage:own_camera` tag) and Smart will always leave it alone
+- **Other camera add-ons**: Vantage steps aside when another add-on locks your camera (like cutscenes). If you don't want that you can turn it off in the settings
 
 ## Capailities
 
