@@ -21,10 +21,10 @@
 	},
 	"header": {
 		"name": "§9§lVantage§r Behaviors",
-		"description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.4.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1030.1§r",
+		"description": "§9§lVantage§r is a dynamic first-person add-on for Minecraft: Bedrock Edition! Let's you see your own body. §r\n\n§e§lBUILD DETAILS:§r §7v2.5.0, By Draco12191712 (Vivaan Bobade). Licensed under MPL-2.0. Build Number 1031.1§r",
 		"min_engine_version": "1.26.0",
 		"uuid": "df9c5a01-48bd-4bf3-94e0-8e4ba56af13b",
-		"version": "2.4.0"
+		"version": "2.5.0"
 	},
 	"modules": [
 		{
@@ -32,14 +32,14 @@
 			"description": "Behavior module assets for Vantage",
 			"type": "data",
 			"uuid": "9bbf8315-5afb-4398-a303-db404c9cb039",
-			"version": "2.4.0"
+			"version": "2.5.0"
 		},
 		{
 			"type": "script",
 			"language": "javascript",
 			"uuid": "b3c48929-c09a-4fe7-a57b-3f9e93672673",
 			"entry": "scripts/main.js",
-			"version": "2.4.0"
+			"version": "2.5.0"
 		}
 	],
 	"dependencies": [
@@ -53,7 +53,7 @@
 		},
 		{
 			"uuid": "32a52da7-56df-4241-b6cd-066b88d5b2aa",
-			"version": "2.4.0"
+			"version": "2.5.0"
 		}
 	],
 	"settings": [
@@ -456,6 +456,38 @@
 			"text": "Immersive Combat: let combat mode use its own camera §7(starting value)",
 			"name": "vantage:ic_camera",
 			"default": false
+		},
+		{
+			"type": "toggle",
+			"text": "TacZ (Timeless and Classics Guns) support",
+			"name": "vantage:tacz",
+			"default": true
+		},
+		{
+			"type": "dropdown",
+			"text": "TacZ: holding a gun §7(starting value)",
+			"name": "vantage:gun_mode",
+			"options": [
+				{
+					"name": "off",
+					"text": "Keep Vantage"
+				},
+				{
+					"name": "first",
+					"text": "Vanilla first person (TacZ gun view)"
+				},
+				{
+					"name": "third",
+					"text": "Third person"
+				}
+			],
+			"default": "first"
+		},
+		{
+			"type": "toggle",
+			"text": "TacZ: vanilla view while aiming (sneak) §7(starting value)",
+			"name": "vantage:gun_aim",
+			"default": true
 		}
 	]
 }

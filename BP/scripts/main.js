@@ -14,7 +14,7 @@ import {
   EasingType,
 } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
-var v = "2.4.0",
+var v = "2.5.0",
   lol = {};
 var OFF = "§v§u§t§0";
 function go(p) {
@@ -40,6 +40,10 @@ function go(p) {
   }
   if (w.other_fp == true && p.hasTag("ae_fpm.is_first_person") == true) {
     back(p, t, "otherfp", false);
+    return;
+  }
+  if (w.tacz == true && p.hasTag("inWorkbench") == true) {
+    van(p, t, "vanilla");
     return;
   }
   if (
@@ -79,6 +83,7 @@ function go(p) {
   if (fight == true && s.icEpic == true && vw == "body") vw = "epic";
   if (air(p, s) == 2) vw = "third";
   if (t.rd == 2) vw = "third";
+  if (w.tacz == true && s.gun == 2 && gun(o.one) == true) vw = "third";
   var wn2 = "pov";
   if (vw == "third") wn2 = "third";
   if (s.smooth == true && t.k != null) {
@@ -181,6 +186,9 @@ var wd = {
   ic: true,
   ic_epic: false,
   ic_camera: false,
+  tacz: true,
+  gun_mode: "first",
+  gun_aim: true,
   third_style: "dynamic",
   shoulder: "right",
   third_distance: "normal",
@@ -203,6 +211,7 @@ function thing() {
     g = fm.indexOf(w.glide_mode),
     fl = fm.indexOf(w.fly_mode),
     rr = fm.indexOf(w.ride_mode),
+    gm = fm.indexOf(w.gun_mode),
     mo = am.indexOf(w.mount_mode),
     a = ts.indexOf(w.third_style),
     b = sh.indexOf(w.shoulder),
@@ -214,6 +223,7 @@ function thing() {
   if (fl == -1) fl = 2;
   if (rr == -1) rr = 0;
   if (mo == -1) mo = 0;
+  if (gm == -1) gm = 1;
   if (d == -1) d = 1;
   if (x == -1) x = 0;
   if (y == -1) y = 2;
@@ -246,6 +256,8 @@ function thing() {
     thirdDist: c,
     speedFov: w.speed_fov,
     smooth: w.smooth_camera,
+    gun: gm,
+    gunAim: w.gun_aim,
     lensBody: w.lens_body,
     lensEpic: w.lens_epic,
     lensThird: w.lens_third,
@@ -374,6 +386,7 @@ function get(p) {
   s.thirdDist = num(s.thirdDist, 0, 2, 1) | 0;
   s.ride = num(s.ride, 0, 2, 0) | 0;
   s.addonMounts = num(s.addonMounts, 0, 2, 0) | 0;
+  s.gun = num(s.gun, 0, 2, 1) | 0;
   if (vs.indexOf(s.view) == -1) s.view = "body";
   data2[p.id] = s;
   return s;
@@ -419,6 +432,7 @@ world.afterEvents.playerButtonInput.subscribe(function (e) {
     return;
   var p = e.player;
   if (get(p).quickToggle == false || ww().quick_toggle == false) return;
+  if (ww().tacz == true && gun(h(p).one) == true) return;
   var sn = p.inputInfo.getButtonState(InputButton.Sneak) == ButtonState.Pressed;
   if (sn == false) sn = p.isSneaking;
   if (sn == false) return;
@@ -492,6 +506,10 @@ function check(p, s, o, t, w) {
     if (t.rd == 1) return true;
   }
   if (air(p, s) == 1) return true;
+  if (w.tacz == true && gun(o.one) == true) {
+    if (s.gun == 1) return true;
+    if (s.gunAim == true && p.isSneaking == true) return true;
+  }
   if (
     s.vanillaCrawling &&
     p.isSwimming == false &&
@@ -643,8 +661,26 @@ var arr = [
   "minecraft:map",
   "minecraft:filled_map",
 ];
+var tg = [
+  "tac_guns:ak47",
+  "tac_guns:awp",
+  "tac_guns:coltpython",
+  "tac_guns:db",
+  "tac_guns:deagle",
+  "tac_guns:dp28",
+  "tac_guns:glock17",
+  "tac_guns:m134",
+  "tac_guns:m870",
+  "tac_guns:mk18",
+];
+function gun(x) {
+  if (x.indexOf("tac_guns:") != 0) return false;
+  if (tg.indexOf(x.split("_emp")[0]) != -1) return true;
+  return false;
+}
 function check2(o, t) {
   if (t.u == true) return true;
+  if (gun(o.one) == true) return true;
   if (arr.indexOf(o.one) != -1) return true;
   if (arr.indexOf(o.two) != -1) return true;
   if (o.one.endsWith("_spear")) return true;
@@ -840,6 +876,10 @@ function menu2(p) {
   f.toggle("Smooth camera when switching to and from third person", {
     defaultValue: s.smooth,
   });
+  f.dropdown("Holding a gun (TacZ)", fn, { defaultValueIndex: s.gun });
+  f.toggle("TacZ: vanilla view while aiming (sneak)", {
+    defaultValue: s.gunAim,
+  });
   show(p, f, 0, function (r) {
     if (r.canceled || r.formValues == undefined) return;
     var q = r.formValues,
@@ -876,6 +916,8 @@ function menu2(p) {
     n.thirdDist = num(q[29], 0, 2, 1) | 0;
     n.speedFov = q[30] == true;
     n.smooth = q[31] == true;
+    n.gun = num(q[32], 0, 2, 1) | 0;
+    n.gunAim = q[33] == true;
     if (n.view == undefined) n.view = "body";
     save(p, n);
     p.sendMessage("§7[Vantage] Settings saved.");
