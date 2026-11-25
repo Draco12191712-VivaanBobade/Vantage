@@ -14,7 +14,7 @@ import {
   EasingType,
 } from "@minecraft/server";
 import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
-var v = "2.5.0",
+var v = "2.6.1",
   lol = {};
 var OFF = "§v§u§t§0";
 function go(p) {
@@ -38,7 +38,11 @@ function go(p) {
     back(p, t, "paused", true);
     return;
   }
-  if (w.other_fp == true && p.hasTag("ae_fpm.is_first_person") == true) {
+  if (
+    w.other_fp == true &&
+    p.hasTag("ae_fpm.is_first_person") == true &&
+    p.hasTag("vantage:fp") == false
+  ) {
     back(p, t, "otherfp", false);
     return;
   }
@@ -63,13 +67,15 @@ function go(p) {
     return;
   }
   var fight = icc(p, t, w);
+  ick(p, t, w, now, fight);
+  ftag(p, t, t.dn == true && en == true && vw != "third");
   if (
     fight == true &&
     s.icCamera == true &&
     en == true &&
     p.hasTag("ae_fpm.disable_animation") == false
   ) {
-    back(p, t, "ic", "third");
+    back(p, t, "ic", false);
     return;
   }
   if (en == false) {
@@ -83,6 +89,7 @@ function go(p) {
   if (fight == true && s.icEpic == true && vw == "body") vw = "epic";
   if (air(p, s) == 2) vw = "third";
   if (t.rd == 2) vw = "third";
+  if (t.kd == true && s.icKnock == 2) vw = "third";
   if (w.tacz == true && s.gun == 2 && gun(o.one) == true) vw = "third";
   var wn2 = "pov";
   if (vw == "third") wn2 = "third";
@@ -134,6 +141,12 @@ function go(p) {
       if (w.ic == true && p.hasTag("ae_fpm.disable_animation") == true)
         an = "animation.vantage.head";
     }
+    if (
+      fight == true &&
+      p.hasTag("ae_fpm.disable_animation") == false &&
+      (t.iw == true || now - t.sw < 25 || p.isSneaking == true)
+    )
+      an = an + ".nr";
     if (t.a != null && t.a != an) {
       p.playAnimation(t.a, { players: [p], blendOutTime: 0 });
       t.a = null;
@@ -148,6 +161,10 @@ function go(p) {
   }
   t.m = vw;
   t.c = 0;
+  if (t.fr != 0 && now >= t.fr) {
+    t.fr = 0;
+    if (t.f != null) t.f = "x";
+  }
   if (vw == "third" && s.thirdStyle == 0 && s.speedFov == true)
     zoom(p, t, s, now);
   else fov(p, t, s);
@@ -189,6 +206,8 @@ var wd = {
   tacz: true,
   gun_mode: "first",
   gun_aim: true,
+  ic_dodge: true,
+  ic_knockdown: "third",
   third_style: "dynamic",
   shoulder: "right",
   third_distance: "normal",
@@ -224,6 +243,8 @@ function thing() {
   if (rr == -1) rr = 0;
   if (mo == -1) mo = 0;
   if (gm == -1) gm = 1;
+  var kn = fm.indexOf(w.ic_knockdown);
+  if (kn == -1) kn = 2;
   if (d == -1) d = 1;
   if (x == -1) x = 0;
   if (y == -1) y = 2;
@@ -258,6 +279,8 @@ function thing() {
     smooth: w.smooth_camera,
     gun: gm,
     gunAim: w.gun_aim,
+    icDodge: w.ic_dodge,
+    icKnock: kn,
     lensBody: w.lens_body,
     lensEpic: w.lens_epic,
     lensThird: w.lens_third,
@@ -279,6 +302,17 @@ function st(id) {
       xb: 0,
       p: 0,
       iw: false,
+      im: false,
+      dn: false,
+      dc: 0,
+      ds: false,
+      dh: 0,
+      kd: false,
+      ia: false,
+      la: -100,
+      sw: -100,
+      vf: false,
+      fr: 0,
       k: null,
       g: 0,
       gk: "pov",
@@ -387,6 +421,7 @@ function get(p) {
   s.ride = num(s.ride, 0, 2, 0) | 0;
   s.addonMounts = num(s.addonMounts, 0, 2, 0) | 0;
   s.gun = num(s.gun, 0, 2, 1) | 0;
+  s.icKnock = num(s.icKnock, 0, 2, 2) | 0;
   if (vs.indexOf(s.view) == -1) s.view = "body";
   data2[p.id] = s;
   return s;
@@ -433,6 +468,7 @@ world.afterEvents.playerButtonInput.subscribe(function (e) {
   var p = e.player;
   if (get(p).quickToggle == false || ww().quick_toggle == false) return;
   if (ww().tacz == true && gun(h(p).one) == true) return;
+  if (icc(p, st(p.id), ww()) == true) return;
   var sn = p.inputInfo.getButtonState(InputButton.Sneak) == ButtonState.Pressed;
   if (sn == false) sn = p.isSneaking;
   if (sn == false) return;
@@ -506,6 +542,8 @@ function check(p, s, o, t, w) {
     if (t.rd == 1) return true;
   }
   if (air(p, s) == 1) return true;
+  if (s.icDodge == true && t.dh > system.currentTick) return true;
+  if (t.kd == true && s.icKnock == 1) return true;
   if (w.tacz == true && gun(o.one) == true) {
     if (s.gun == 1) return true;
     if (s.gunAim == true && p.isSneaking == true) return true;
@@ -691,32 +729,124 @@ function icc(p, t, w) {
   if (w.ic == false) return false;
   if (ic1 == null) ic1 = ItemTypes.get("imc:combat_mode") != undefined;
   if (ic1 == false) return false;
+  var hs = p.getEffect("haste"),
+    mf = p.getEffect("mining_fatigue"),
+    now = system.currentTick;
+  if (
+    hs != undefined &&
+    mf != undefined &&
+    hs.amplifier >= 255 &&
+    mf.amplifier >= 255
+  ) {
+    t.ia = true;
+    t.la = now;
+    t.im = true;
+    return true;
+  }
   var e = p.getEffect("weakness");
-  if (e != undefined && e.duration <= 25) {
+  if (e != undefined && e.duration <= 25 && e.amplifier < 255) {
     t.iw = true;
+    t.im = false;
     return false;
   }
   if (t.iw == true) return true;
+  if (t.ia == true) {
+    if (h(p).one == "") {
+      t.im = false;
+      return false;
+    }
+    if (now - t.la < 40) return true;
+  }
+  if (t.im == true) return true;
   return false;
 }
+function ick(p, t, w, now, fight) {
+  if (w.ic == false || ic1 != true) return;
+  var dt = p.hasTag("ae_fpm.disable_animation");
+  if (p.hasTag("dash") == true) {
+    if (t.ds != true && dt == false) t.dh = now + 20;
+    t.ds = true;
+  } else t.ds = false;
+  var ve = p.getVelocity(),
+    fast =
+      fight == true &&
+      Math.sqrt(ve.x * ve.x + ve.z * ve.z) > 1 &&
+      p.isGliding == false &&
+      p.isFlying == false &&
+      m(p) == undefined;
+  if (fast == true && t.vf != true && dt == false) t.dh = now + 20;
+  t.vf = fast;
+  var wk = p.getEffect("weakness");
+  if (
+    p.inputPermissions.isPermissionCategoryEnabled(
+      InputPermissionCategory.LateralMovement,
+    ) == true
+  )
+    t.kd = false;
+  else if (
+    t.kd != true &&
+    wk != undefined &&
+    wk.amplifier >= 255 &&
+    wk.duration > 60
+  )
+    t.kd = true;
+  if (dt == true && p.isSneaking == false) {
+    t.dn = true;
+    t.dc = 0;
+  } else if (t.dn == true && fight == true && p.isInWater == false) {
+    t.dc++;
+    if (t.dc > 100) t.dn = false;
+  }
+}
+function ftag(p, t, on) {
+  if (on == true && p.hasTag("vantage:fp") == false) {
+    p.addTag("vantage:fp");
+    p.addTag("ae_fpm.is_first_person");
+  }
+  if (on == false && p.hasTag("vantage:fp") == true) {
+    p.removeTag("vantage:fp");
+    p.removeTag("ae_fpm.is_first_person");
+  }
+}
+world.afterEvents.entityHurt.subscribe(function (e) {
+  var a = e.damageSource.damagingEntity,
+    b = e.hurtEntity;
+  if (a != undefined && a.typeId == "minecraft:player") {
+    st(a.id).im = true;
+    st(a.id).fr = system.currentTick + 15;
+  }
+  if (b.typeId == "minecraft:player") st(b.id).fr = system.currentTick + 15;
+  if (
+    b.typeId == "minecraft:player" &&
+    (e.damageSource.cause == "entityAttack" ||
+      e.damageSource.cause == "projectile")
+  )
+    st(b.id).im = true;
+});
+world.afterEvents.playerSwingStart.subscribe(function (e) {
+  if (e.swingSource == "Attack") {
+    st(e.player.id).im = true;
+    st(e.player.id).sw = system.currentTick;
+  }
+});
 function menu(p) {
   var s = get(p),
     f = new ActionFormData();
   f.title("Vantage");
   f.body(
     "Vantage is " +
-      (s.enabled ? "§aON§r" : "§cOFF§r") +
-      "\nView: §f" +
-      nm(s) +
-      "§r\nBody distance: §f" +
-      dn[s.distance] +
-      "§r\nCrosshair: §f" +
-      (s.crosshair ? xn[s.crosshairStyle] : "Off") +
-      "§r\nLens switches to: §f" +
-      lzn(s) +
-      "§r\n§7Quick toggle: Sneak + Jump\nVantage Lens: use it to switch views§r\n§8v" +
-      v +
-      "§r",
+    (s.enabled ? "§aON§r" : "§cOFF§r") +
+    "\nView: §f" +
+    nm(s) +
+    "§r\nBody distance: §f" +
+    dn[s.distance] +
+    "§r\nCrosshair: §f" +
+    (s.crosshair ? xn[s.crosshairStyle] : "Off") +
+    "§r\nLens switches to: §f" +
+    lzn(s) +
+    "§r\n§7Quick toggle: Sneak + Jump\nVantage Lens: use it to switch views§r\n§8v" +
+    v +
+    "§r",
   );
   f.button(s.enabled ? "Turn Off" : "Turn On");
   f.button("Switch View");
@@ -736,6 +866,8 @@ function menu(p) {
   });
 }
 world.afterEvents.itemUse.subscribe(function (e) {
+  if (e.itemStack.typeId == "imc:combat_mode" && e.source.isSneaking == false)
+    st(e.source.id).im = !st(e.source.id).im;
   if (e.itemStack.typeId != "vantage:lens") return;
   lens(e.source);
 });
@@ -788,10 +920,10 @@ var dn = ["Close", "Normal", "Far"],
 var xn = ["Vanilla", "Dot", "Small plus", "Circle"],
   xs = ["vanilla", "dot", "plus", "circle"];
 var wn = [
-    "Keep Vantage",
-    "Vanilla only while swimming",
-    "Vanilla while swimming or in deep water",
-  ],
+  "Keep Vantage",
+  "Vanilla only while swimming",
+  "Vanilla while swimming or in deep water",
+],
   wm = ["off", "swim", "deep"];
 var an2 = ["Let it use its own camera", "Smart: its own camera if it has one, if not use my riding setting", "Always use my riding setting"],
   am = ["own", "smart", "rider"];
@@ -880,6 +1012,12 @@ function menu2(p) {
   f.toggle("TacZ: vanilla view while aiming (sneak)", {
     defaultValue: s.gunAim,
   });
+  f.toggle("Immersive Combat: hide my body during dodges", {
+    defaultValue: s.icDodge,
+  });
+  f.dropdown("Immersive Combat: camera during heavy knockdowns", fn, {
+    defaultValueIndex: s.icKnock,
+  });
   show(p, f, 0, function (r) {
     if (r.canceled || r.formValues == undefined) return;
     var q = r.formValues,
@@ -918,6 +1056,8 @@ function menu2(p) {
     n.smooth = q[31] == true;
     n.gun = num(q[32], 0, 2, 1) | 0;
     n.gunAim = q[33] == true;
+    n.icDodge = q[34] == true;
+    n.icKnock = num(q[35], 0, 2, 2) | 0;
     if (n.view == undefined) n.view = "body";
     save(p, n);
     p.sendMessage("§7[Vantage] Settings saved.");
@@ -999,10 +1139,10 @@ world.afterEvents.playerSpawn.subscribe(function (e) {
     if (w.welcome_message == false) return;
     p.sendMessage(
       "§7[§9§lVantage§r§7 v" +
-        v +
-        "]§r Vantage is " +
-        (get(p).enabled ? "§aon" : "§coff") +
-        "§r.\n§7Toggle: §fSneak + Jump§7 or §f/vantage§7. Craft a §9Vantage Lens§7 (glass pane + copper ingot) to switch views. Try the §fEpic Fight§7 view for just your two arms!",
+      v +
+      "]§r Vantage is " +
+      (get(p).enabled ? "§aon" : "§coff") +
+      "§r.\n§7Toggle: §fSneak + Jump§7 or §f/vantage§7. Craft a §9Vantage Lens§7 (glass pane + copper ingot) to switch views. Try the §fEpic Fight§7 view for just your two arms!",
     );
   }, 60);
 });
@@ -1016,6 +1156,6 @@ system.runInterval(function () {
   for (var i = 0; i < ps.length; i++) {
     try {
       if (ps[i].isValid) go(ps[i]);
-    } catch (e) {}
+    } catch (e) { }
   }
 }, 1);
