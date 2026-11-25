@@ -2,7 +2,7 @@
 
 Vantage is a first person addon for Minecraft Bedrock! When you look down you can actually see your body (legs, arms, armor, your skin, all of it) and everything else in the game stays the same :D
 
-**Current version: v2.5.0** · works on Minecraft Bedrock 1.26.0 and up
+**Current version: v2.6.1** · works on Minecraft Bedrock 1.26.0 and up
 
 ## How to use it
 
@@ -41,7 +41,7 @@ There's A LOT of settings now :p
 
 ## Compatibility
 
-- **Immersive Combat**: the combat animations show up on your arms in first person. If you turn on "Epic Fight view in combat mode", Vantage switches to your two arms whenever combat mode is on. If you'd rather use Immersive Combat's own combat camera, turn on "let combat mode use its own camera". Immersive Combat's "Dynamic First Person" camera type also works with Vantage
+- **Immersive Combat** (including the new REMATCH update): works with everything in it! The combat animations show up on your arms in first person, and your body doesn't over-turn anymore when combat animations play. When you dodge, Vantage hides your body for a sec so you don't see yourself flip across the screen, and when you get knocked down hard (in the older version) it switches to third person so you can see yourself go down (you can change both in the settings). If you turn on "Epic Fight view in combat mode", Vantage switches to your two arms whenever combat mode is on. If you'd rather use Immersive Combat's own combat camera (Vanilla, Cinematic or Custom), turn on "let combat mode use its own camera" and Vantage leaves it alone. Immersive Combat's "Dynamic First Person" camera type works with Vantage too, without the errors, and Sneak + Jump won't turn Vantage off while you parry or dodge. If you use a custom FOV, it comes back after Immersive Combat's hit zoom
 - **Age of Dragons**: when you ride a dragon Vantage gets out of the way so the dragon camera works, and comes back when you get off
 - **Immersive Aircraft**: same thing, Vantage steps aside while you fly so the plane camera, the scope and the flight FOV all work, and comes back when you land
 - **Add-on mounts**: by default Vantage steps aside for any add-on mob or vehicle you ride, so its own camera works. If you set "Add-on mounts" to Smart, Vantage only steps aside if the mob actually has its own camera (like Immersive Aircraft planes, or Age of Dragons dragons with the dragon camera on), and if it doesn't, Vantage takes over with your riding setting, so you can use the dynamic camera on add-on creatures too
@@ -54,7 +54,7 @@ There's A LOT of settings now :p
 - While Vantage is on, F5 doesn't work because the camera is locked (that's a Minecraft thing). Use the Lens or turn Vantage off instead
 - It doesn't replace the player model, so skin packs, texture packs and shaders should all be fine. The only UI it adds is the crosshair
 - Age of Dragons resets everyone's camera every single tick when they're not on a dragon. Vantage puts its camera back every tick so it should still work, but if your screen flickers with Age of Dragons on, that's why
-- Immersive Combat combat mode is detected with the weakness Immersive Combat gives you outside of combat, so if a world turns that weakness off, the Immersive Combat combat settings in Vantage won't kick in
+- Vantage knows you're in Immersive Combat's combat mode from the effects Immersive Combat gives you while you fight. If you're holding something that isn't a weapon, it also watches the Combat Switcher, your hits and your swings, so it can be a bit off if combat mode turns itself off on a timer
 
 ## Credits
 
